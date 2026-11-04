@@ -9,4 +9,5 @@ class AppColors {
   static const Color slateBlue = Color(0xFF53647F);
   static const Color background = Color(0xFFF5F7FC);
   static const Color white = Color(0xFFFFFFFF);
+  static const Color danger = Color(0xFFD32F2F);
 }
