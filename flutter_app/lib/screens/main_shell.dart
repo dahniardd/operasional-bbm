@@ -60,25 +60,43 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
+    final username = user?.username ?? '-';
+    final initial = username.isNotEmpty ? username.substring(0, 1).toUpperCase() : '?';
 
     return Scaffold(
       extendBody: true,
       appBar: AppBar(
-        title: Text(_titles[_currentIndex]),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        title: Text(
+          _titles[_currentIndex],
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 20),
+        ),
         actions: [
           Container(
-            margin: const EdgeInsets.only(right: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: const EdgeInsets.fromLTRB(4, 4, 12, 4),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.14),
+              color: Colors.white.withValues(alpha: 0.16),
               borderRadius: BorderRadius.circular(AppTheme.radiusFull),
             ),
             child: Row(
               children: [
-                const Icon(Icons.person_outline, color: Colors.white, size: 16),
-                const SizedBox(width: 6),
+                CircleAvatar(
+                  radius: 12,
+                  backgroundColor: Colors.white,
+                  child: Text(
+                    initial,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
                 Text(
-                  user?.username ?? '-',
+                  username,
                   style: GoogleFonts.inter(
                     color: Colors.white,
                     fontSize: 12,
@@ -93,6 +111,7 @@ class _MainShellState extends State<MainShell> {
             onPressed: _logout,
             icon: const Icon(Icons.logout_rounded),
           ),
+          const SizedBox(width: 4),
         ],
       ),
       body: IndexedStack(
