@@ -4,9 +4,11 @@ import 'package:provider/provider.dart';
 
 import '../config/theme.dart';
 import '../providers/auth_provider.dart';
-import 'harga/harga_list_screen.dart';
+import '../widgets/custom_bottom_nav.dart';
 import 'login_screen.dart';
-import 'pemakaian/pemakaian_list_screen.dart';
+import 'main/dashboard_page.dart';
+import 'main/history_page.dart';
+import 'main/input_page.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -18,7 +20,7 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
-  static const _titles = ['Pemakaian BBM', 'Harga BBM'];
+  static const _titles = ['Dashboard', 'Input', 'Riwayat'];
 
   Future<void> _logout() async {
     final confirmed = await showDialog<bool>(
@@ -60,6 +62,7 @@ class _MainShellState extends State<MainShell> {
     final user = context.watch<AuthProvider>().user;
 
     return Scaffold(
+      extendBody: true,
       appBar: AppBar(
         title: Text(_titles[_currentIndex]),
         actions: [
@@ -72,11 +75,7 @@ class _MainShellState extends State<MainShell> {
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.person_outline,
-                  color: Colors.white,
-                  size: 16,
-                ),
+                const Icon(Icons.person_outline, color: Colors.white, size: 16),
                 const SizedBox(width: 6),
                 Text(
                   user?.username ?? '-',
@@ -98,32 +97,15 @@ class _MainShellState extends State<MainShell> {
       ),
       body: IndexedStack(
         index: _currentIndex,
-        children: const [
-          PemakaianListScreen(),
-          HargaBbmListScreen(),
-        ],
+        children: const [DashboardPage(), InputPage(), HistoryPage()],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
+      bottomNavigationBar: CustomBottomNav(
+        currentIndex: _currentIndex,
+        onTap: (index) {
           setState(() {
             _currentIndex = index;
           });
         },
-        backgroundColor: Colors.white,
-        indicatorColor: AppTheme.primary.withValues(alpha: 0.12),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long_rounded),
-            label: 'Pemakaian',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.local_gas_station_outlined),
-            selectedIcon: Icon(Icons.local_gas_station_rounded),
-            label: 'Harga BBM',
-          ),
-        ],
       ),
     );
   }
