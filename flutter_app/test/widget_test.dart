@@ -1,30 +1,19 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:operasional_bbm/main.dart';
+import 'package:operasional_bbm/models/pemakaian_bbm.dart';
+import 'package:operasional_bbm/utils/formatters.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  test('parseAngka handles Indonesian separators', () {
+    expect(parseAngka('1.500,50'), 1500.5);
+    expect(parseAngka('2,5'), 2.5);
+    expect(parseAngka('150000'), 150000);
+    expect(parseAngka(''), isNull);
+  });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  test('label jenis BBM tersedia lengkap', () {
+    expect(PemakaianBbm.jenisBbmLabels['pertamax_turbo'], 'Pertamax Turbo');
+    expect(PemakaianBbm.jenisBbmLabels['solar'], 'Solar');
+    expect(PemakaianBbm.jenisBbmLabels.length, 5);
+    expect(PemakaianBbm.lokasiLabels['luar_paiton'], 'Luar Paiton');
   });
 }
