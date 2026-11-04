@@ -25,9 +25,16 @@ function env_value($names, $default = null)
 
 function is_local_request()
 {
-    $host = strtolower(explode(':', $_SERVER['HTTP_HOST'] ?? '')[0]);
+    $host = strtolower(trim($_SERVER['HTTP_HOST'] ?? ''));
 
-    if ($host === '' || in_array($host, ['localhost', '127.0.0.1', '10.0.2.2'], true)) {
+    // Host IPv6 dikirim dalam format "[::1]:port".
+    if (preg_match('/^\[([^\]]+)\](?::\d+)?$/', $host, $matches)) {
+        $host = $matches[1];
+    } elseif (!filter_var($host, FILTER_VALIDATE_IP)) {
+        $host = preg_replace('/:\d+$/', '', $host);
+    }
+
+    if ($host === '' || in_array($host, ['localhost', '127.0.0.1', '::1', '10.0.2.2'], true)) {
         return true;
     }
 
