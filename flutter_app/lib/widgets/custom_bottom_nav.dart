@@ -13,84 +13,77 @@ class CustomBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
 
-  static const double _referenceWidth = 390;
+  static const double _barHeight = 88;
+  static const double _protrusion = 30; // tinggi tombol di atas bar
+  static const double _buttonSize = 72;
+  static const double _notchGap = 8; // jarak lekukan ke tombol
 
   @override
   Widget build(BuildContext context) {
-    final media = MediaQuery.of(context);
-    final width = media.size.width;
-    final scale = (width / _referenceWidth).clamp(0.85, 1.2);
-    final bottomInset = media.padding.bottom;
-
-    final navHeight = (140 * scale).clamp(130.0, 148.0);
-    final fabDiameter = (110 * scale).clamp(104.0, 112.0);
-    final fabBorder = (9 * scale).clamp(8.0, 10.0);
-    final protrusion = (68 * scale).clamp(62.0, 70.0);
-    final navIconSize = (28 * scale).clamp(24.0, 30.0);
-    final fabIconSize = (34 * scale).clamp(30.0, 36.0);
-    final labelSize = (width * 0.030).clamp(10.5, 13.0);
-    final totalHeight = protrusion + navHeight + bottomInset;
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+    final notchRadius = _buttonSize / 2 + _notchGap;
+    final barColor = Color.alphaBlend(
+      AppColors.primary.withValues(alpha: 0.05),
+      AppColors.white,
+    );
 
     return SizedBox(
-      height: totalHeight,
+      height: _protrusion + _barHeight + bottomInset,
       child: Stack(
         clipBehavior: Clip.none,
-        alignment: Alignment.bottomCenter,
         children: [
+          // Bar dengan lekukan di tengah
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
-            height: navHeight + bottomInset,
-            child: const _NavBackground(),
+            height: _barHeight + bottomInset,
+            child: CustomPaint(
+              painter: _BarPainter(
+                color: barColor,
+                shadowColor: AppColors.primary.withValues(alpha: 0.18),
+                notchRadius: notchRadius,
+                // pusat tombol sedikit di bawah tepi atas bar
+                notchCenterY: _buttonSize / 2 - _protrusion,
+              ),
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(14, 14, 14, 14 + bottomInset),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _NavPill(
+                        icon: Icons.speed_rounded,
+                        label: 'Dashboard',
+                        active: currentIndex == 0,
+                        onTap: () => onTap(0),
+                      ),
+                    ),
+                    SizedBox(width: notchRadius * 2 + 8),
+                    Expanded(
+                      child: _NavPill(
+                        icon: Icons.receipt_long_rounded,
+                        label: 'Riwayat',
+                        active: currentIndex == 2,
+                        onTap: () => onTap(2),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
+
+          // Tombol tengah
           Positioned(
+            top: 0,
             left: 0,
             right: 0,
-            bottom: bottomInset,
-            height: navHeight,
-            child: Row(
-              children: [
-                Expanded(
-                  child: _SideItem(
-                    icon: Icons.speed_rounded,
-                    label: 'Dashboard',
-                    active: currentIndex == 0,
-                    activeColor: AppColors.darkTeal,
-                    iconSize: navIconSize,
-                    labelSize: labelSize,
-                    onTap: () => onTap(0),
-                  ),
-                ),
-                Expanded(
-                  child: _InputLabel(
-                    active: currentIndex == 1,
-                    labelSize: labelSize,
-                    topOffset: (fabDiameter - protrusion) + 6,
-                    onTap: () => onTap(1),
-                  ),
-                ),
-                Expanded(
-                  child: _SideItem(
-                    icon: Icons.receipt_long_rounded,
-                    label: 'Riwayat',
-                    active: currentIndex == 2,
-                    activeColor: AppColors.slateBlue,
-                    iconSize: navIconSize,
-                    labelSize: labelSize,
-                    onTap: () => onTap(2),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Align(
-            alignment: Alignment.topCenter,
-            child: _InputButton(
-              diameter: fabDiameter,
-              borderWidth: fabBorder,
-              iconSize: fabIconSize,
-              onTap: () => onTap(1),
+            child: Center(
+              child: _CenterButton(
+                size: _buttonSize,
+                active: currentIndex == 1,
+                onTap: () => onTap(1),
+              ),
             ),
           ),
         ],
@@ -99,49 +92,84 @@ class CustomBottomNav extends StatelessWidget {
   }
 }
 
-class _NavBackground extends StatelessWidget {
-  const _NavBackground();
+class _BarPainter extends CustomPainter {
+  _BarPainter({
+    required this.color,
+    required this.shadowColor,
+    required this.notchRadius,
+    required this.notchCenterY,
+  });
+
+  final Color color;
+  final Color shadowColor;
+  final double notchRadius;
+  final double notchCenterY;
 
   @override
-  Widget build(BuildContext context) {
-    return const DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x0F000000),
-            blurRadius: 24,
-            offset: Offset(0, -6),
-          ),
-        ],
-      ),
+  void paint(Canvas canvas, Size size) {
+    final bar = Path()
+      ..addRRect(
+        RRect.fromRectAndCorners(
+          Offset.zero & size,
+          topLeft: const Radius.circular(32),
+          topRight: const Radius.circular(32),
+        ),
+      );
+
+    final notch = Path()
+      ..addOval(
+        Rect.fromCircle(
+          center: Offset(size.width / 2, notchCenterY),
+          radius: notchRadius,
+        ),
+      );
+
+    final path = Path.combine(PathOperation.difference, bar, notch);
+
+    // bayangan ke arah atas
+    canvas.drawPath(
+      path.shift(const Offset(0, -4)),
+      Paint()
+        ..color = shadowColor
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 16),
+    );
+
+    canvas.drawPath(path, Paint()..color = color);
+
+    // garis tepi putih tipis
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = Colors.white.withValues(alpha: 0.9),
     );
   }
+
+  @override
+  bool shouldRepaint(covariant _BarPainter old) =>
+      old.color != color ||
+      old.shadowColor != shadowColor ||
+      old.notchRadius != notchRadius ||
+      old.notchCenterY != notchCenterY;
 }
 
-class _SideItem extends StatelessWidget {
-  const _SideItem({
+class _NavPill extends StatelessWidget {
+  const _NavPill({
     required this.icon,
     required this.label,
     required this.active,
-    required this.activeColor,
-    required this.iconSize,
-    required this.labelSize,
     required this.onTap,
   });
 
   final IconData icon;
   final String label;
   final bool active;
-  final Color activeColor;
-  final double iconSize;
-  final double labelSize;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final color = activeColor.withValues(alpha: active ? 1 : 0.45);
+    final color = active ? AppColors.primary : const Color(0xFF6B7280);
 
     return Semantics(
       button: true,
@@ -150,141 +178,114 @@ class _SideItem extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TweenAnimationBuilder<Color?>(
-              tween: ColorTween(end: color),
-              duration: const Duration(milliseconds: 180),
-              builder: (context, value, child) {
-                return Icon(icon, size: iconSize, color: value ?? color);
-              },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          decoration: BoxDecoration(
+            color: active
+                ? Color.alphaBlend(
+                    AppColors.primary.withValues(alpha: 0.08),
+                    AppColors.white,
+                  )
+                : AppColors.white,
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(
+              color: active
+                  ? AppColors.primary.withValues(alpha: 0.15)
+                  : Colors.transparent,
+              width: 1.2,
             ),
-            const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: FittedBox(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TweenAnimationBuilder<Color?>(
+                tween: ColorTween(end: color),
+                duration: const Duration(milliseconds: 180),
+                builder: (context, value, _) =>
+                    Icon(icon, size: 24, color: value ?? color),
+              ),
+              const SizedBox(height: 3),
+              FittedBox(
                 fit: BoxFit.scaleDown,
                 child: AnimatedDefaultTextStyle(
                   duration: const Duration(milliseconds: 180),
                   style: GoogleFonts.inter(
                     color: color,
-                    fontSize: labelSize,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 11.5,
+                    fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                     height: 1.1,
                   ),
                   child: Text(label, maxLines: 1),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _InputLabel extends StatelessWidget {
-  const _InputLabel({
+class _CenterButton extends StatelessWidget {
+  const _CenterButton({
+    required this.size,
     required this.active,
-    required this.labelSize,
-    required this.topOffset,
     required this.onTap,
   });
 
+  final double size;
   final bool active;
-  final double labelSize;
-  final double topOffset;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final color = AppColors.navy.withValues(alpha: active ? 1 : 0.55);
-
     return Semantics(
       button: true,
       selected: active,
       label: 'Input',
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Padding(
-          padding: EdgeInsets.only(top: topOffset),
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 180),
-                  style: GoogleFonts.inter(
-                    color: color,
-                    fontSize: labelSize,
-                    fontWeight: FontWeight.w700,
-                    height: 1.1,
-                  ),
-                  child: const Text('Input', maxLines: 1),
-                ),
+      child: AnimatedScale(
+        scale: active ? 1.06 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutBack,
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.40),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Material(
+            color: AppColors.primary,
+            shape: CircleBorder(
+              side: BorderSide(
+                color: AppColors.white.withValues(alpha: 0.95),
+                width: 5,
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _InputButton extends StatelessWidget {
-  const _InputButton({
-    required this.diameter,
-    required this.borderWidth,
-    required this.iconSize,
-    required this.onTap,
-  });
-
-  final double diameter;
-  final double borderWidth;
-  final double iconSize;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: 'Input',
-      child: Container(
-        width: diameter,
-        height: diameter,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.32),
-              blurRadius: 28,
-              offset: const Offset(0, 12),
-            ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.12),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Material(
-          color: AppColors.primary,
-          shape: CircleBorder(
-            side: BorderSide(color: AppColors.white, width: borderWidth),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: onTap,
-            child: Center(
-              child: Icon(
-                Icons.local_gas_station_rounded,
-                color: AppColors.white,
-                size: iconSize,
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onTap,
+              customBorder: const CircleBorder(),
+              child: const Center(
+                child: Icon(
+                  Icons.local_gas_station_rounded,
+                  color: AppColors.white,
+                  size: 32,
+                ),
               ),
             ),
           ),
