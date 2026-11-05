@@ -17,7 +17,28 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  int _currentIndex = 0;
+  static const int _tabDashboard = 0;
+  static const int _tabHistory = 2;
+
+  int _currentIndex = _tabDashboard;
+
+  /// Naik setiap kali Riwayat perlu dimuat ulang (buka tab, atau selesai input).
+  int _historyTick = 0;
+
+  void _openHistory() {
+    setState(() {
+      _currentIndex = _tabHistory;
+      _historyTick++;
+    });
+  }
+
+  Future<void> _openInput() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const InputStep1Screen()),
+    );
+    // Setelah kembali dari form input, data baru harus muncul di Riwayat.
+    if (mounted) setState(() => _historyTick++);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -133,20 +154,23 @@ class _MainShellState extends State<MainShell> {
       ),
       body: IndexedStack(
         index: _currentIndex,
-        children: const [DashboardPageAdvanced(), InputPage(), HistoryPage()],
+        children: [
+          DashboardPageAdvanced(onOpenHistory: _openHistory),
+          const InputPage(),
+          HistoryPage(refreshTick: _historyTick),
+        ],
       ),
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _currentIndex,
         onTap: (index) {
           if (index == 1) {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const InputStep1Screen()),
-            );
+            _openInput();
             return;
           }
 
           setState(() {
             _currentIndex = index;
+            if (index == _tabHistory) _historyTick++;
           });
         },
       ),

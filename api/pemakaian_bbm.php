@@ -229,6 +229,17 @@ if ($method === 'GET') {
         $params[] = $lokasi;
     }
 
+    // scope=mine -> hanya data milik user login; scope=others -> data driver lain.
+    // User diambil dari token di server, bukan dari parameter yang dikirim aplikasi.
+    $scope = $_GET['scope'] ?? '';
+    if ($scope === 'mine') {
+        $where[] = "p.dicatat_oleh = ?";
+        $params[] = (int) $user['id'];
+    } elseif ($scope === 'others') {
+        $where[] = "p.dicatat_oleh <> ?";
+        $params[] = (int) $user['id'];
+    }
+
     $whereSql = !empty($where) ? ' WHERE ' . implode(' AND ', $where) : '';
 
     $countStmt = $pdo->prepare(
@@ -236,6 +247,14 @@ if ($method === 'GET') {
     );
     $countStmt->execute($params);
     $total = (int) $countStmt->fetchColumn();
+
+    // Ringkasan total (semua halaman) untuk filter yang sedang aktif.
+    $sumStmt = $pdo->prepare(
+        "SELECT COALESCE(SUM(p.jumlah), 0) AS total_jumlah, COALESCE(SUM(p.liter), 0) AS total_liter
+         FROM pemakaian_bbm p LEFT JOIN kendaraan k ON p.kendaraan_id = k.id{$whereSql}"
+    );
+    $sumStmt->execute($params);
+    $sum = $sumStmt->fetch();
 
     $page = max(1, (int) ($_GET['page'] ?? 1));
     $perPage = (int) ($_GET['per_page'] ?? 20);
@@ -264,6 +283,8 @@ if ($method === 'GET') {
             'per_page' => $perPage,
             'last_page' => $lastPage,
             'total' => $total,
+            'total_jumlah' => (float) $sum['total_jumlah'],
+            'total_liter' => (float) $sum['total_liter'],
         ],
     ]);
 }
@@ -344,6 +365,16 @@ if ($method === 'POST') {
         if (!$existing) {
             json_response(['message' => 'Data pemakaian BBM tidak ditemukan.'], 404);
         }
+
+        $bolehUbah = in_array($user['role'] ?? '', ['admin', 'petugas'], true)
+            || (int) $existing['dicatat_oleh'] === (int) $user['id'];
+
+        if (!$bolehUbah) {
+            json_response(['message' => 'Anda hanya bisa mengubah data pemakaian milik sendiri.'], 403);
+        }
+
+        // Pencatat asli tidak diganti saat data diubah.
+        $validated['dicatat_oleh'] = (int) $existing['dicatat_oleh'];
 
         $set = implode(', ', array_map(fn ($field) => "{$field} = ?", array_keys($validated)));
         $params = array_values($validated);
