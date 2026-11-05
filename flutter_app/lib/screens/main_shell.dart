@@ -6,7 +6,6 @@ import '../config/app_colors.dart';
 import '../widgets/custom_bottom_nav.dart';
 import 'main/dashboard_page_advanced.dart' show DashboardPageAdvanced;
 import 'main/history_page.dart';
-import 'main/input_page.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -39,7 +38,7 @@ class _MainShellState extends State<MainShell> {
               width: 48,
               height: 48,
               child: Image.asset(
-                'assets/logo.png',
+                'assets/images/logo.png',
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) => Container(
                   decoration: BoxDecoration(
@@ -137,6 +136,13 @@ class _MainShellState extends State<MainShell> {
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _currentIndex,
         onTap: (index) {
+          if (index == 1) {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const InputStep1Screen()),
+            );
+            return;
+          }
+
           setState(() {
             _currentIndex = index;
           });
