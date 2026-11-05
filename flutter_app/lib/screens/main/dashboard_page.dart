@@ -10,8 +10,8 @@ import '../../providers/pemakaian_bbm_provider.dart';
 import '../../widgets/dashboard_chart_card.dart';
 import '../../widgets/dashboard_stat_card.dart';
 import '../../widgets/recent_activity_card.dart';
-import '../harga/harga_list_screen.dart';
-import '../pemakaian/pemakaian_list_screen.dart';
+import 'history_page.dart';
+import '../input_bbm/input_step1_screen.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -512,7 +512,7 @@ class _DashboardPageState extends State<DashboardPage>
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const PemakaianListScreen(),
+                        builder: (_) => const HistoryPage(),
                       ),
                     ).then((_) => _loadDashboardData());
                   },
@@ -525,10 +525,10 @@ class _DashboardPageState extends State<DashboardPage>
                   Icons.price_change_outlined,
                   const [Color(0xFFf093fb), Color(0xFFF5576c)],
                   () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const HargaBbmListScreen(),
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Fitur Harga BBM akan segera hadir'),
+                        behavior: SnackBarBehavior.floating,
                       ),
                     );
                   },
@@ -603,7 +603,7 @@ class _DashboardPageState extends State<DashboardPage>
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const PemakaianListScreen(),
+                      builder: (_) => const HistoryPage(),
                     ),
                   );
                 },
