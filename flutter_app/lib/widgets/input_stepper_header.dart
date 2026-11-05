@@ -55,7 +55,7 @@ class InputStepperHeader extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(5),
                   child: Image.asset(
-                    'assets/logo.png',
+                    'assets/images/logo.png',
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) => Container(
                       decoration: BoxDecoration(

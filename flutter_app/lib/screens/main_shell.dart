@@ -39,7 +39,7 @@ class _MainShellState extends State<MainShell> {
               width: 48,
               height: 48,
               child: Image.asset(
-                'assets/logo.png',
+                'assets/images/logo.png',
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) => Container(
                   decoration: BoxDecoration(
