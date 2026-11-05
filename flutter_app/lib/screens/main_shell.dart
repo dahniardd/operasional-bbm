@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../config/app_colors.dart';
 import '../widgets/custom_bottom_nav.dart';
-import 'main/dashboard_page.dart';
+import 'main/dashboard_page_advanced.dart' show DashboardPageAdvanced;
 import 'main/history_page.dart';
 import 'main/input_page.dart';
 
@@ -132,7 +132,7 @@ class _MainShellState extends State<MainShell> {
       ),
       body: IndexedStack(
         index: _currentIndex,
-        children: const [DashboardPage(), InputPage(), HistoryPage()],
+        children: const [DashboardPageAdvanced(), InputPage(), HistoryPage()],
       ),
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _currentIndex,
