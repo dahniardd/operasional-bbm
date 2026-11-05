@@ -31,7 +31,7 @@ void main() {
 
       expect(tester.takeException(), isNull);
 
-      await tester.tap(find.text('Input'));
+      await tester.tap(find.byIcon(Icons.local_gas_station_rounded));
       expect(tapped, 1);
 
       await tester.tap(find.text('Riwayat'));
