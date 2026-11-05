@@ -1,3 +1,5 @@
+import 'dart:ui' show PointerDeviceKind;
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -30,6 +32,7 @@ class _LoginScreenState extends State<LoginScreen>
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _scrollController = ScrollController();
 
   late final AnimationController _kenBurns;
 
@@ -39,6 +42,27 @@ class _LoginScreenState extends State<LoginScreen>
   // Lengkungan sudut kiri atas kartu & seberapa jauh kartu menimpa foto
   static const double _cardRadius = 80;
   static const double _overlap = 48;
+
+  // Menurunkan seluruh kartu (termasuk lengkung sudutnya).
+  // Makin besar = kartu makin turun. Negatif = kartu naik.
+  static const double _cardDrop = 16;
+
+  // Tinggi foto sebagai pecahan tinggi layar. Makin kecil = foto makin
+  // "zoom out" (kurang terpotong kiri-kanan).
+  static const double _heroFraction = 0.34;
+
+  // Zoom foto: mulai dari skala dasar, membesar sejauh _zoomRange.
+  // Set _zoomRange = 0 kalau mau foto diam tanpa efek zoom.
+  static const double _baseScale = 1.0;
+  static const double _zoomRange = 0.05;
+
+  // Seberapa cepat foto ikut bergeser saat form di-scroll (0 = diam,
+  // 1 = ikut sama cepat dengan kartu).
+  static const double _parallax = 0.35;
+
+  // Tambahan tinggi kartu supaya bisa di-scroll (dalam piksel).
+  // 0 = kartu pas setinggi sisa layar.
+  static const double _extraScroll = 0;
 
   @override
   void initState() {
@@ -53,6 +77,7 @@ class _LoginScreenState extends State<LoginScreen>
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
+    _scrollController.dispose();
     _kenBurns.dispose();
     super.dispose();
   }
@@ -208,7 +233,7 @@ class _LoginScreenState extends State<LoginScreen>
               animation: _kenBurns,
               builder: (context, child) {
                 return Transform.scale(
-                  scale: 1.05 + (0.08 * _kenBurns.value),
+                  scale: _baseScale + (_zoomRange * _kenBurns.value),
                   child: child,
                 );
               },
@@ -275,7 +300,7 @@ class _LoginScreenState extends State<LoginScreen>
           'Selamat Datang',
           textAlign: TextAlign.center,
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 26,
+            fontSize: 22,
             fontWeight: FontWeight.w800,
             color: _C.navy,
           ),
@@ -285,7 +310,7 @@ class _LoginScreenState extends State<LoginScreen>
           'Masukkan username dan password Anda untuk melanjutkan.',
           textAlign: TextAlign.center,
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 12.5,
+            fontSize: 10,
             height: 1.5,
             color: _C.secondary,
           ),
@@ -352,243 +377,277 @@ class _LoginScreenState extends State<LoginScreen>
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final media = MediaQuery.of(context);
-    final heroHeight = (media.size.height * 0.42).clamp(260.0, 420.0);
-    final cardTop = heroHeight - _overlap;
-    final cardMinHeight = media.size.height - cardTop;
+    final topPad = media.padding.top;
+    final heroHeight =
+        (media.size.height * _heroFraction).clamp(220.0, 360.0);
+
+    // Posisi atas kartu: makin besar _cardDrop, makin turun
+    final cardTop = heroHeight - _overlap + _cardDrop;
+
+    // Kartu setinggi sisa layar (+ _extraScroll kalau mau ada ruang scroll)
+    final cardMinHeight = media.size.height - cardTop + _extraScroll;
 
     return Scaffold(
       backgroundColor: _C.surface,
       body: Stack(
         children: [
-          // Foto di belakang
+          // Foto di belakang, ikut bergeser pelan saat form di-scroll
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            child: _buildHero(heroHeight, media.padding.top),
+            child: AnimatedBuilder(
+              animation: _scrollController,
+              builder: (context, child) {
+                final offset = _scrollController.hasClients
+                    ? _scrollController.offset.clamp(0.0, double.infinity)
+                    : 0.0;
+                return Transform.translate(
+                  offset: Offset(0, -offset * _parallax),
+                  child: child,
+                );
+              },
+              child: _buildHero(heroHeight, topPad),
+            ),
           ),
 
-          // Kartu form scroll di atas foto
+          // Kartu form: bisa di-scroll kalau isinya melebihi layar
           Positioned.fill(
-            child: SingleChildScrollView(
-              keyboardDismissBehavior:
-                  ScrollViewKeyboardDismissBehavior.onDrag,
-              child: Column(
-                children: [
-                  SizedBox(height: cardTop),
-                  Container(
-                    width: double.infinity,
-                    constraints: BoxConstraints(minHeight: cardMinHeight),
-                    padding: EdgeInsets.fromLTRB(
-                      28,
-                      30,
-                      28,
-                      20 + media.padding.bottom,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _C.surface,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(_cardRadius),
-                        topRight: Radius.circular(20),
+            child: ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(
+                scrollbars: false,
+                dragDevices: {
+                  PointerDeviceKind.touch,
+                  PointerDeviceKind.mouse,
+                  PointerDeviceKind.stylus,
+                  PointerDeviceKind.trackpad,
+                },
+              ),
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                physics: const ClampingScrollPhysics(),
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                child: Column(
+                  children: [
+                    SizedBox(height: cardTop),
+                    Container(
+                      width: double.infinity,
+                      constraints: BoxConstraints(minHeight: cardMinHeight),
+                      padding: EdgeInsets.fromLTRB(
+                        28,
+                        30,
+                        28,
+                        20 + media.padding.bottom,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: _C.navy.withValues(alpha: 0.12),
-                          blurRadius: 25,
-                          offset: const Offset(0, -8),
+                      decoration: BoxDecoration(
+                        color: _C.surface,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(_cardRadius),
+                          topRight: Radius.circular(20),
                         ),
-                      ],
-                    ),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _buildHeading(),
-                          const SizedBox(height: 22),
-
-                          // Username
-                          TextFormField(
-                            controller: _usernameController,
-                            textInputAction: TextInputAction.next,
-                            autofillHints: const [AutofillHints.username],
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: _C.navy,
-                            ),
-                            decoration: _inputDecoration(
-                              label: 'Username / NIP',
-                              hint: 'Contoh: 9418209NP',
-                              icon: Icons.person_outline_rounded,
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Username wajib diisi.';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Password
-                          TextFormField(
-                            controller: _passwordController,
-                            obscureText: _obscurePassword,
-                            textInputAction: TextInputAction.done,
-                            autofillHints: const [AutofillHints.password],
-                            onFieldSubmitted: (_) => _submit(),
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: _C.navy,
-                            ),
-                            decoration: _inputDecoration(
-                              label: 'Password',
-                              hint: 'Masukkan password',
-                              icon: Icons.lock_outline_rounded,
-                              suffix: IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    _obscurePassword = !_obscurePassword;
-                                  });
-                                },
-                                icon: Icon(
-                                  _obscurePassword
-                                      ? Icons.visibility_outlined
-                                      : Icons.visibility_off_outlined,
-                                  size: 20,
-                                  color: _C.slate400,
-                                ),
-                              ),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Password wajib diisi.';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Ingat perangkat + Lupa
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              InkWell(
-                                borderRadius: BorderRadius.circular(8),
-                                onTap: () =>
-                                    setState(() => _remember = !_remember),
-                                child: Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 4),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: Checkbox(
-                                          value: _remember,
-                                          activeColor: _C.primary,
-                                          side: const BorderSide(
-                                            color: _C.slate300,
-                                            width: 1.5,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(4),
-                                          ),
-                                          onChanged: (v) => setState(
-                                            () => _remember = v ?? false,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Ingat Perangkat Ini',
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: _C.slate600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: _showForgotPassword,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 4,
-                                  ),
-                                  child: Text(
-                                    'Lupa?',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: _C.primary,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          // Error dari AuthProvider
-                          if (auth.error != null) ...[
-                            const SizedBox(height: 14),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: _C.error.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: _C.error.withValues(alpha: 0.25),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.error_outline,
-                                    color: _C.error,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      auth.error!,
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: _C.error,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-
-                          const SizedBox(height: 28),
-                          _buildSubmitButton(auth),
-
-                          const SizedBox(height: 32),
-                          Text(
-                            'Aplikasi Resmi Operasional BBM © 2026 PT PLN Nusantara Power',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w600,
-                              color: _C.slate400,
-                            ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _C.navy.withValues(alpha: 0.12),
+                            blurRadius: 25,
+                            offset: const Offset(0, -8),
                           ),
                         ],
                       ),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildHeading(),
+                            const SizedBox(height: 22),
+
+                            // Username
+                            TextFormField(
+                              controller: _usernameController,
+                              textInputAction: TextInputAction.next,
+                              autofillHints: const [AutofillHints.username],
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: _C.navy,
+                              ),
+                              decoration: _inputDecoration(
+                                label: 'Username / NIP',
+                                hint: 'Contoh: 9418209NP',
+                                icon: Icons.person_outline_rounded,
+                              ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Username wajib diisi.';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 12),
+
+                            // Password
+                            TextFormField(
+                              controller: _passwordController,
+                              obscureText: _obscurePassword,
+                              textInputAction: TextInputAction.done,
+                              autofillHints: const [AutofillHints.password],
+                              onFieldSubmitted: (_) => _submit(),
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: _C.navy,
+                              ),
+                              decoration: _inputDecoration(
+                                label: 'Password',
+                                hint: 'Masukkan password',
+                                icon: Icons.lock_outline_rounded,
+                                suffix: IconButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_outlined
+                                        : Icons.visibility_off_outlined,
+                                    size: 20,
+                                    color: _C.slate400,
+                                  ),
+                                ),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Password wajib diisi.';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 14),
+
+                            // Ingat perangkat + Lupa
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                InkWell(
+                                  borderRadius: BorderRadius.circular(8),
+                                  onTap: () =>
+                                      setState(() => _remember = !_remember),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 4,
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: Checkbox(
+                                            value: _remember,
+                                            activeColor: _C.primary,
+                                            side: const BorderSide(
+                                              color: _C.slate300,
+                                              width: 1.5,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                            ),
+                                            onChanged: (v) => setState(
+                                              () => _remember = v ?? false,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Ingat Perangkat Ini',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: _C.slate600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: _showForgotPassword,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 4,
+                                    ),
+                                    child: Text(
+                                      'Lupa?',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: _C.primary,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            // Error dari AuthProvider
+                            if (auth.error != null) ...[
+                              const SizedBox(height: 14),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: _C.error.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: _C.error.withValues(alpha: 0.25),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.error_outline,
+                                      color: _C.error,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        auth.error!,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          color: _C.error,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+
+                            const SizedBox(height: 28),
+                            _buildSubmitButton(auth),
+
+                            // Footer: normal di bawah tombol, selalu tampil
+                            const SizedBox(height: 35),
+                            Text(
+                              'Aplikasi Resmi Operasional BBM © 2026 PT PLN Nusantara Power',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w600,
+                                color: _C.slate400,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
