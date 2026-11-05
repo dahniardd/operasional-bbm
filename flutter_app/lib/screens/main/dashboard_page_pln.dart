@@ -8,8 +8,8 @@ import '../../models/pemakaian_bbm.dart';
 import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/pemakaian_bbm_provider.dart';
-import '../pemakaian/pemakaian_list_screen.dart';
-import '../pemakaian/pemakaian_form_screen.dart';
+import '../input_bbm/input_step1_screen.dart';
+import 'history_page.dart';
 
 class DashboardPagePln extends StatefulWidget {
   const DashboardPagePln({super.key});
@@ -452,7 +452,7 @@ class _DashboardPagePlnState extends State<DashboardPagePln>
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const PemakaianFormScreen(),
+                      builder: (_) => const InputStep1Screen(),
                     ),
                   ).then((_) => _loadDashboardData());
                 },
@@ -466,7 +466,7 @@ class _DashboardPagePlnState extends State<DashboardPagePln>
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const PemakaianListScreen(),
+                      builder: (_) => const HistoryPage(),
                     ),
                   ).then((_) => _loadDashboardData());
                 },

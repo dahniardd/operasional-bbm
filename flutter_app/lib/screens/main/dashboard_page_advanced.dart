@@ -12,8 +12,7 @@ import '../../widgets/advanced_header.dart';
 import '../../widgets/advanced_quick_action.dart';
 import '../../widgets/advanced_chart_widget.dart';
 import '../../widgets/advanced_transaction_card.dart';
-import '../pemakaian/pemakaian_list_screen.dart';
-import '../pemakaian/pemakaian_form_screen.dart';
+import '../input_bbm/input_step1_screen.dart';
 
 class DashboardPageAdvanced extends StatefulWidget {
   const DashboardPageAdvanced({super.key});
@@ -408,7 +407,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const PemakaianFormScreen(),
+                      builder: (_) => InputStep1Screen(),
                     ),
                   ).then((_) => _loadDashboardData());
                 },
@@ -420,12 +419,18 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                 primaryColor: PlnColors.success,
                 backgroundColor: const Color(0xFFE8F9F5),
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const PemakaianListScreen(),
+                  // Navigate ke tab History
+                  setState(() {
+                    // Trigger parent to change tab
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Gunakan tab History di bawah untuk melihat riwayat'),
+                      behavior: SnackBarBehavior.floating,
+                      backgroundColor: PlnColors.primaryBlue,
+                      duration: const Duration(seconds: 2),
                     ),
-                  ).then((_) => _loadDashboardData());
+                  );
                 },
               ),
               AdvancedQuickAction(
@@ -515,12 +520,14 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const PemakaianListScreen(),
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Gunakan tab History di bawah untuk melihat semua riwayat'),
+                          behavior: SnackBarBehavior.floating,
+                          backgroundColor: PlnColors.primaryBlue,
+                          duration: const Duration(seconds: 2),
                         ),
-                      ).then((_) => _loadDashboardData());
+                      );
                     },
                     borderRadius: BorderRadius.circular(8),
                     child: Padding(
