@@ -15,7 +15,10 @@ import '../../widgets/advanced_transaction_card.dart';
 import '../input_bbm/input_step1_screen.dart';
 
 class DashboardPageAdvanced extends StatefulWidget {
-  const DashboardPageAdvanced({super.key});
+  /// Dipanggil saat user ingin membuka tab Riwayat (diatur oleh MainShell).
+  final VoidCallback? onOpenHistory;
+
+  const DashboardPageAdvanced({super.key, this.onOpenHistory});
 
   @override
   State<DashboardPageAdvanced> createState() => _DashboardPageAdvancedState();
@@ -418,20 +421,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                 icon: Icons.history,
                 primaryColor: PlnColors.success,
                 backgroundColor: const Color(0xFFE8F9F5),
-                onTap: () {
-                  // Navigate ke tab History
-                  setState(() {
-                    // Trigger parent to change tab
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Gunakan tab History di bawah untuk melihat riwayat'),
-                      behavior: SnackBarBehavior.floating,
-                      backgroundColor: PlnColors.primaryBlue,
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
-                },
+                onTap: () => widget.onOpenHistory?.call(),
               ),
               AdvancedQuickAction(
                 label: 'Statistik',
@@ -515,20 +505,11 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                   ),
                 ],
               ),
-              if (_recentTransactions.length > 3)
+              if (_recentTransactions.isNotEmpty)
                 Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('Gunakan tab History di bawah untuk melihat semua riwayat'),
-                          behavior: SnackBarBehavior.floating,
-                          backgroundColor: PlnColors.primaryBlue,
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    },
+                    onTap: () => widget.onOpenHistory?.call(),
                     borderRadius: BorderRadius.circular(8),
                     child: Padding(
                       padding: const EdgeInsets.all(8),
