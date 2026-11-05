@@ -138,6 +138,7 @@ class ApiService {
     int? kendaraanId,
     String? jenisBbm,
     String? lokasiPembelian,
+    String? scope, // 'mine' = milik sendiri, 'others' = driver lain
     int page = 1,
     int perPage = 20,
   }) {
@@ -164,6 +165,10 @@ class ApiService {
 
     if (lokasiPembelian != null && lokasiPembelian.isNotEmpty) {
       query['lokasi_pembelian'] = lokasiPembelian;
+    }
+
+    if (scope != null && scope.isNotEmpty) {
+      query['scope'] = scope;
     }
 
     return _dio.get(
