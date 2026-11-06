@@ -180,6 +180,7 @@ class ApiService {
   Future<Response> storePemakaianBbm(
     Map<String, dynamic> payload, {
     int? id,
+    MultipartFile? buktiBbm,
   }) {
     final query = <String, dynamic>{};
 
@@ -187,9 +188,16 @@ class ApiService {
       query['id'] = id;
     }
 
+    final data = buktiBbm == null
+        ? payload
+        : FormData.fromMap({
+            ...payload,
+            'bukti_bbm': buktiBbm,
+          });
+
     return _dio.post(
       '/pemakaian_bbm.php',
-      data: payload,
+      data: data,
       queryParameters: query,
     );
   }

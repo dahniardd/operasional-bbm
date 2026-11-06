@@ -15,6 +15,7 @@ class PemakaianBbm {
   final double jumlah;
   final int dicatatOleh;
   final String? pencatat;
+  final String? buktiUrl;
   final String tanggalString;
 
   PemakaianBbm({
@@ -34,6 +35,7 @@ class PemakaianBbm {
     required this.jumlah,
     required this.dicatatOleh,
     this.pencatat,
+    this.buktiUrl,
   }) : tanggalString = HargaBbmDate.formatIso(tanggal);
 
   factory PemakaianBbm.fromJson(Map<String, dynamic> json) {
@@ -54,6 +56,7 @@ class PemakaianBbm {
       jumlah: (json['jumlah'] as num?)?.toDouble() ?? 0,
       dicatatOleh: (json['dicatat_oleh'] as num?)?.toInt() ?? 0,
       pencatat: json['pencatat'] as String?,
+      buktiUrl: json['bukti_bbm_url'] as String?,
     );
   }
 

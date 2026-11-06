@@ -1,6 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/app_colors.dart';
@@ -34,6 +36,11 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
 
   bool _syncing = false;
   String _lastEdited = 'liter';
+
+  final ImagePicker _imagePicker = ImagePicker();
+  Uint8List? _fotoBytes;
+  String? _fotoName;
+  bool _pickingFoto = false;
 
   @override
   void initState() {
@@ -171,6 +178,123 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
     _syncing = false;
   }
 
+  Future<void> _pilihSumberFoto() async {
+    if (_pickingFoto) {
+      return;
+    }
+
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusXl),
+        ),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: 44,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 10),
+            ListTile(
+              leading: const Icon(
+                Icons.photo_camera_outlined,
+                color: AppColors.primary,
+              ),
+              title: Text(
+                'Ambil dari Kamera',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              onTap: () => Navigator.of(sheetContext).pop(ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.photo_library_outlined,
+                color: AppColors.primary,
+              ),
+              title: Text(
+                'Pilih dari Galeri',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              onTap: () => Navigator.of(sheetContext).pop(ImageSource.gallery),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) {
+      return;
+    }
+
+    await _ambilFoto(source);
+  }
+
+  Future<void> _ambilFoto(ImageSource source) async {
+    setState(() {
+      _pickingFoto = true;
+    });
+
+    try {
+      final picked = await _imagePicker.pickImage(
+        source: source,
+        maxWidth: 1600,
+        imageQuality: 80,
+      );
+
+      if (picked == null) {
+        return;
+      }
+
+      final bytes = await picked.readAsBytes();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _fotoBytes = bytes;
+        _fotoName =
+            picked.name.isEmpty ? 'bukti_bbm.jpg' : picked.name;
+      });
+    } catch (_) {
+      if (mounted) {
+        AppSnackbar.error(context, 'Gagal mengambil foto. Coba lagi.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _pickingFoto = false;
+        });
+      }
+    }
+  }
+
+  void _hapusFoto() {
+    setState(() {
+      _fotoBytes = null;
+      _fotoName = null;
+    });
+  }
+
   Future<void> _submit() async {
     if (!_canSubmit) {
       return;
@@ -189,7 +313,19 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
       'jasa': 0,
     };
 
-    final success = await provider.savePemakaian(payload);
+    MultipartFile? buktiBbm;
+    final foto = _fotoBytes;
+    if (foto != null) {
+      buktiBbm = MultipartFile.fromBytes(
+        foto,
+        filename: _fotoName ?? 'bukti_bbm.jpg',
+      );
+    }
+
+    final success = await provider.savePemakaian(
+      payload,
+      buktiBbm: buktiBbm,
+    );
 
     if (!mounted) {
       return;
@@ -496,6 +632,8 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
+                  _buildBuktiCard(),
+                  const SizedBox(height: 16),
                   _buildEstimateCard(),
                   const SizedBox(height: 24),
                   SizedBox(
@@ -578,6 +716,112 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildBuktiCard() {
+    final hasFoto = _fotoBytes != null;
+
+    return InputSectionCard(
+      icon: Icons.photo_camera_rounded,
+      title: 'Bukti BBM',
+      children: [
+        Text(
+          'Opsional. Lampirkan foto struk atau bukti pengisian BBM.',
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            color: AppColors.slateBlue,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (!hasFoto)
+          InkWell(
+            onTap: _pickingFoto ? null : _pilihSumberFoto,
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.25),
+                ),
+              ),
+              child: Column(
+                children: [
+                  if (_pickingFoto)
+                    const SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                    )
+                  else
+                    const Icon(
+                      Icons.add_a_photo_outlined,
+                      size: 30,
+                      color: AppColors.primary,
+                    ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _pickingFoto ? 'Memproses foto...' : 'Tambah Foto Bukti',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.darkTeal,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Ambil dari kamera atau pilih dari galeri',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: AppColors.slateBlue,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else ...[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            child: Image.memory(
+              _fotoBytes!,
+              width: double.infinity,
+              height: 190,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _pickingFoto ? null : _pilihSumberFoto,
+                  icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+                  label: const Text('Ganti Foto'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _pickingFoto ? null : _hapusFoto,
+                  icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                  label: const Text('Hapus'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.danger,
+                    side: BorderSide(
+                      color: AppColors.danger.withValues(alpha: 0.4),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 
