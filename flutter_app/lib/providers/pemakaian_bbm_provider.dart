@@ -103,6 +103,7 @@ class PemakaianBbmProvider extends ChangeNotifier {
   Future<bool> savePemakaian(
     Map<String, dynamic> payload, {
     int? id,
+    MultipartFile? buktiBbm,
   }) async {
     _isSubmitting = true;
     _error = null;
@@ -110,7 +111,11 @@ class PemakaianBbmProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final res = await _api.storePemakaianBbm(payload, id: id);
+      final res = await _api.storePemakaianBbm(
+        payload,
+        id: id,
+        buktiBbm: buktiBbm,
+      );
       _successMessage = res.data['message']?.toString() ??
           'Data pemakaian BBM berhasil disimpan.';
       _isSubmitting = false;

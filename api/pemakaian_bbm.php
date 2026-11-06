@@ -11,6 +11,79 @@ $id = $_GET['id'] ?? ($input['id'] ?? null);
 const JENIS_BBM = ['pertamax', 'pertadex', 'dexlite', 'pertamax_turbo', 'solar'];
 const LOKASI_PEMBELIAN = ['paiton', 'luar_paiton'];
 
+function bukti_bbm_url($path)
+{
+    if ($path === null || $path === '') {
+        return null;
+    }
+
+    if (str_starts_with($path, 'http')) {
+        return $path;
+    }
+
+    return rtrim(get_base_url(), '/') . '/' . ltrim($path, '/');
+}
+
+function simpan_bukti_bbm($file)
+{
+    if (!isset($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        json_response(['message' => 'Gagal mengunggah foto bukti BBM.'], 422);
+    }
+
+    $maxBytes = 5 * 1024 * 1024;
+    if (($file['size'] ?? 0) > $maxBytes) {
+        json_response(['message' => 'Ukuran foto bukti BBM maksimal 5 MB.'], 422);
+    }
+
+    $info = @getimagesize($file['tmp_name']);
+    if (!$info || empty($info['mime'])) {
+        json_response(['message' => 'File bukti BBM bukan gambar yang valid.'], 422);
+    }
+
+    $mimeToExt = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/webp' => 'webp',
+    ];
+
+    $mime = strtolower($info['mime']);
+    if (!isset($mimeToExt[$mime])) {
+        json_response(['message' => 'Format foto bukti BBM harus JPG, PNG, atau WEBP.'], 422);
+    }
+
+    $dir = __DIR__ . '/uploads/bukti';
+    if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+        json_response(['message' => 'Folder penyimpanan foto tidak tersedia.'], 500);
+    }
+
+    $filename = 'bukti_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $mimeToExt[$mime];
+    $target = $dir . '/' . $filename;
+
+    if (!move_uploaded_file($file['tmp_name'], $target)) {
+        json_response(['message' => 'Gagal menyimpan foto bukti BBM.'], 500);
+    }
+
+    @chmod($target, 0644);
+
+    return 'uploads/bukti/' . $filename;
+}
+
+function hapus_bukti_bbm($path)
+{
+    if ($path === null || $path === '' || str_starts_with($path, 'http')) {
+        return;
+    }
+
+    $file = __DIR__ . '/' . ltrim($path, '/');
+    if (is_file($file)) {
+        @unlink($file);
+    }
+}
+
 function format_pemakaian($row)
 {
     return [
@@ -30,6 +103,8 @@ function format_pemakaian($row)
         'jumlah' => (float) $row['jumlah'],
         'dicatat_oleh' => (int) $row['dicatat_oleh'],
         'pencatat' => $row['pencatat'] ?? null,
+        'bukti_bbm' => $row['bukti_bbm'] ?? null,
+        'bukti_bbm_url' => bukti_bbm_url($row['bukti_bbm'] ?? null),
         'created_at' => $row['created_at'] ?? null,
         'updated_at' => $row['updated_at'] ?? null,
     ];
@@ -356,6 +431,12 @@ if ($method === 'POST') {
     }
 
     $validated = validate_pemakaian_input($pdo, $input);
+
+    $buktiBaru = simpan_bukti_bbm($_FILES['bukti_bbm'] ?? null);
+    if ($buktiBaru !== null) {
+        $validated['bukti_bbm'] = $buktiBaru;
+    }
+
     $validated['dicatat_oleh'] = (int) $user['id'];
     $now = date('Y-m-d H:i:s');
 
@@ -371,6 +452,10 @@ if ($method === 'POST') {
 
         if (!$bolehUbah) {
             json_response(['message' => 'Anda hanya bisa mengubah data pemakaian milik sendiri.'], 403);
+        }
+
+        if ($buktiBaru !== null) {
+            hapus_bukti_bbm($existing['bukti_bbm'] ?? null);
         }
 
         // Pencatat asli tidak diganti saat data diubah.
@@ -430,6 +515,8 @@ if ($method === 'DELETE') {
 
     $stmt = $pdo->prepare("DELETE FROM pemakaian_bbm WHERE id = ?");
     $stmt->execute([$id]);
+
+    hapus_bukti_bbm($existing['bukti_bbm'] ?? null);
 
     json_response(['message' => 'Data pemakaian BBM berhasil dihapus.']);
 }

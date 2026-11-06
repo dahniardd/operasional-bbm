@@ -9,7 +9,7 @@ class ApiConfig {
   // flutter run --dart-define=API_BASE_URL=http://192.168.x.x/operasional-bbm/api
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://127.0.0.1/operasional-bbm/api',
+    defaultValue: 'https://operasional.umumcsr.com/api-bbm',
   );
 
   static const Duration connectTimeout = Duration(seconds: 15);
