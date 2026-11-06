@@ -6,6 +6,7 @@ import '../config/app_colors.dart';
 import '../widgets/custom_bottom_nav.dart';
 import 'main/dashboard_page_advanced.dart' show DashboardPageAdvanced;
 import 'main/history_page.dart';
+import 'main/profile_screen.dart';
 import 'main/input_page.dart';
 import 'input_bbm/input_step1_screen.dart';
 
@@ -154,6 +155,35 @@ class _MainShellState extends State<MainShell> {
                 const SizedBox(width: 20),
               ],
             ),
+          ),
+          const SizedBox(width: 4),
+
+          // Avatar: ketuk untuk membuka profil
+          Tooltip(
+            message: 'Profil',
+            child: Material(
+              color: AppColors.darkTeal,
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                ),
+                child: const SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: Icon(
+                    Icons.person_outline_rounded,
+                    color: AppColors.white,
+                    size: 26,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 20),
+        ],
+      ),
       body: IndexedStack(
         index: _currentIndex,
         children: [
