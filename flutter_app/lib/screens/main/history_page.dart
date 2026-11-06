@@ -29,7 +29,10 @@ String _rp(num v) {
 String _liter(num v) => v.toStringAsFixed(2).replaceAll('.', ',');
 
 /// '2026-09-14' -> '14 Sep 2026'
-String _tgl(String raw) {
+/// Aman terhadap nilai kosong (null) dari API: tampil '-'.
+String _tgl(dynamic value) {
+  final raw = (value ?? '').toString();
+  if (raw.isEmpty) return '-';
   final iso = raw.length >= 10 ? raw.substring(0, 10) : raw;
   final p = iso.split('-');
   if (p.length != 3) return raw;
@@ -38,10 +41,15 @@ String _tgl(String raw) {
   return '${int.tryParse(p[2]) ?? p[2]} ${_bulan[m - 1]} ${p[0]}';
 }
 
-String _title(String s) => s
-    .split('_')
-    .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
-    .join(' ');
+/// 'luar_paiton' -> 'Luar Paiton'. Nilai kosong (null) tampil '-'.
+String _title(dynamic value) {
+  final s = (value ?? '').toString();
+  if (s.isEmpty) return '-';
+  return s
+      .split('_')
+      .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+      .join(' ');
+}
 
 String _errorMessage(Object e) {
   if (e is DioException) {
