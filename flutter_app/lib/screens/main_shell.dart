@@ -8,7 +8,7 @@ import 'main/dashboard_page_advanced.dart' show DashboardPageAdvanced;
 import 'main/history_page.dart';
 import 'main/profile_screen.dart';
 import 'main/input_page.dart';
-import 'input_bbm/input_step1_screen.dart';
+import 'input_bbm/input_bbm_screen.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -36,7 +36,7 @@ class _MainShellState extends State<MainShell> {
   Future<void> _openInput() async {
     await Navigator.of(
       context,
-    ).push(MaterialPageRoute(builder: (_) => const InputStep1Screen()));
+    ).push(MaterialPageRoute(builder: (_) => const InputBbmScreen()));
     // Setelah kembali dari form input, data baru harus muncul di Riwayat.
     if (mounted) setState(() => _historyTick++);
   }

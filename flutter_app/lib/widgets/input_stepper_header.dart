@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../config/app_colors.dart';
-import '../config/theme.dart';
 
 class InputStepperHeader extends StatelessWidget {
   final String title;
@@ -84,8 +83,10 @@ class InputStepperHeader extends StatelessWidget {
               const Spacer(),
             ],
           ),
-          const SizedBox(height: 20),
-          _buildStepper(),
+          if (steps.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            _buildStepper(),
+          ],
         ],
       ),
     );

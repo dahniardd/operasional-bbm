@@ -13,7 +13,7 @@ import '../../widgets/advanced_header.dart';
 import '../../widgets/advanced_quick_action.dart';
 import '../../widgets/advanced_chart_widget.dart';
 import '../../widgets/advanced_transaction_card.dart';
-import '../input_bbm/input_step1_screen.dart';
+import '../input_bbm/input_bbm_screen.dart';
 
 class DashboardPageAdvanced extends StatefulWidget {
   /// Dipanggil saat user ingin membuka tab Riwayat (diatur oleh MainShell).
@@ -445,7 +445,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => InputStep1Screen()),
+                    MaterialPageRoute(builder: (_) => const InputBbmScreen()),
                   ).then((_) => _loadDashboardData());
                 },
               ),

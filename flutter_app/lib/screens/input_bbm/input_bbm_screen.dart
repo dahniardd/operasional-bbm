@@ -1,0 +1,721 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+
+import '../../config/app_colors.dart';
+import '../../config/theme.dart';
+import '../../models/pemakaian_bbm.dart';
+import '../../providers/harga_bbm_provider.dart';
+import '../../providers/master_data_provider.dart';
+import '../../providers/pemakaian_bbm_provider.dart';
+import '../../utils/formatters.dart';
+import '../../utils/rupiah_input_formatter.dart';
+import '../../widgets/app_snackbar.dart';
+import '../../widgets/input_section_card.dart';
+import '../../widgets/input_stepper_header.dart';
+
+class InputBbmScreen extends StatefulWidget {
+  const InputBbmScreen({super.key});
+
+  @override
+  State<InputBbmScreen> createState() => _InputBbmScreenState();
+}
+
+class _InputBbmScreenState extends State<InputBbmScreen> {
+  late final TextEditingController _tanggalController;
+  late final TextEditingController _literController;
+  late final TextEditingController _totalController;
+
+  late DateTime _tanggal;
+  int? _kendaraanId;
+  String _jenisBbm = 'pertamax';
+  String _lokasiPembelian = 'paiton';
+
+  bool _syncing = false;
+  String _lastEdited = 'liter';
+
+  @override
+  void initState() {
+    super.initState();
+    _tanggal = DateTime.now();
+    _tanggalController = TextEditingController(text: formatTanggal(_tanggal));
+    _literController = TextEditingController();
+    _totalController = TextEditingController();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadMasters());
+  }
+
+  @override
+  void dispose() {
+    _tanggalController.dispose();
+    _literController.dispose();
+    _totalController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadMasters() async {
+    final master = context.read<MasterDataProvider>();
+    final harga = context.read<HargaBbmProvider>();
+    final futures = <Future<void>>[];
+
+    if (master.kendaraanList.isEmpty) {
+      futures.add(master.loadKendaraan());
+    }
+
+    if (harga.hargaList.isEmpty) {
+      futures.add(harga.loadHargaBbm());
+    }
+
+    if (futures.isNotEmpty) {
+      await Future.wait(futures);
+    }
+  }
+
+  double? _hargaUntuk(HargaBbmProvider provider) {
+    return provider.hargaUntukTanggal(_tanggal, _jenisBbm);
+  }
+
+  double get _hargaPerLiter =>
+      _hargaUntuk(context.read<HargaBbmProvider>()) ?? 0;
+
+  double get _liter => parseAngka(_literController.text) ?? 0;
+
+  double get _total {
+    final parsed = parseAngka(_totalController.text);
+
+    if (parsed != null && parsed > 0) {
+      return parsed;
+    }
+
+    return _liter * _hargaPerLiter;
+  }
+
+  bool get _canSubmit =>
+      _kendaraanId != null && _hargaPerLiter > 0 && _liter > 0 && _total > 0;
+
+  Future<void> _pickTanggal() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _tanggal,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+
+    if (picked == null) {
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _tanggal = picked;
+      _tanggalController.text = formatTanggal(picked);
+      _resyncTotal();
+    });
+  }
+
+  void _resyncTotal() {
+    if (_literController.text.isEmpty) {
+      return;
+    }
+
+    final harga = _hargaPerLiter;
+
+    if (harga <= 0) {
+      return;
+    }
+
+    _literToTotal(harga);
+  }
+
+  void _syncFromLastEdited() {
+    if (_syncing) {
+      return;
+    }
+
+    final harga = _hargaPerLiter;
+
+    if (harga <= 0) {
+      return;
+    }
+
+    if (_lastEdited == 'total') {
+      _totalToLiter(harga);
+    } else {
+      _literToTotal(harga);
+    }
+  }
+
+  void _literToTotal(double harga) {
+    _syncing = true;
+    _totalController.text =
+        formatRibuan((_liter * harga).round().toString());
+    _syncing = false;
+  }
+
+  void _totalToLiter(double harga) {
+    final total = parseAngka(_totalController.text);
+
+    if (total == null || total <= 0 || harga <= 0) {
+      return;
+    }
+
+    var text = (total / harga).toStringAsFixed(3);
+    text = text.replaceFirst(RegExp(r'0+$'), '');
+    text = text.replaceFirst(RegExp(r'\.$'), '');
+
+    _syncing = true;
+    _literController.text = text.replaceAll('.', ',');
+    _syncing = false;
+  }
+
+  Future<void> _submit() async {
+    if (!_canSubmit) {
+      return;
+    }
+
+    final provider = context.read<PemakaianBbmProvider>();
+
+    final payload = {
+      'tanggal': formatTanggalIso(_tanggal),
+      'kendaraan_id': _kendaraanId,
+      'jenis_bbm': _jenisBbm,
+      'lokasi_pembelian': _lokasiPembelian,
+      'liter': _liter,
+      'total_harga': _total,
+      'service_oli': 0,
+      'jasa': 0,
+    };
+
+    final success = await provider.savePemakaian(payload);
+
+    if (!mounted) {
+      return;
+    }
+
+    if (success) {
+      _showSuccessDialog();
+    } else {
+      AppSnackbar.error(
+        context,
+        provider.error ?? 'Gagal menyimpan data pemakaian BBM.',
+      );
+    }
+  }
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        ),
+        contentPadding: const EdgeInsets.all(28),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: AppTheme.success.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_circle_rounded,
+                color: AppTheme.success,
+                size: 40,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Berhasil!',
+              style: GoogleFonts.inter(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Pemakaian BBM berhasil disimpan.',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: AppTheme.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                  Navigator.of(context).pop(true);
+                },
+                child: Text(
+                  'Kembali ke Dashboard',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final master = context.watch<MasterDataProvider>();
+    final hargaProvider = context.watch<HargaBbmProvider>();
+    final provider = context.watch<PemakaianBbmProvider>();
+    final harga = _hargaUntuk(hargaProvider);
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Column(
+        children: [
+          const InputStepperHeader(
+            title: 'INPUT BBM',
+            steps: <String>[],
+            currentStep: 0,
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  InputSectionCard(
+                    icon: Icons.directions_car_rounded,
+                    title: 'Informasi Kendaraan',
+                    children: [
+                      TextFormField(
+                        controller: _tanggalController,
+                        readOnly: true,
+                        onTap: _pickTanggal,
+                        decoration: const InputDecoration(
+                          labelText: 'Tanggal Pengisian',
+                          prefixIcon: Icon(Icons.calendar_today_outlined),
+                          suffixIcon: Icon(Icons.arrow_drop_down),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<int>(
+                        key: ValueKey('kendaraan-${_kendaraanId ?? 'none'}'),
+                        initialValue: _kendaraanId,
+                        isExpanded: true,
+                        menuMaxHeight: 320,
+                        decoration: const InputDecoration(
+                          labelText: 'Kendaraan',
+                          prefixIcon: Icon(Icons.directions_car_outlined),
+                        ),
+                        hint: Text(
+                          master.isLoading
+                              ? 'Memuat kendaraan...'
+                              : 'Pilih kendaraan',
+                        ),
+                        items: master.kendaraanList
+                            .map(
+                              (kendaraan) => DropdownMenuItem(
+                                value: kendaraan.id,
+                                child: Text(
+                                  kendaraan.label,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _kendaraanId = value;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  InputSectionCard(
+                    icon: Icons.local_gas_station_rounded,
+                    title: 'Detail BBM',
+                    children: [
+                      DropdownButtonFormField<String>(
+                        key: ValueKey('jenis-bbm-$_jenisBbm'),
+                        initialValue: _jenisBbm,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Jenis BBM',
+                          prefixIcon: Icon(Icons.local_gas_station_outlined),
+                        ),
+                        items: PemakaianBbm.jenisBbmLabels.entries
+                            .map(
+                              (entry) => DropdownMenuItem(
+                                value: entry.key,
+                                child: Text(entry.value),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          if (value == null) {
+                            return;
+                          }
+                          setState(() {
+                            _jenisBbm = value;
+                            _resyncTotal();
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      _HargaPerLiterBox(harga: harga),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Lokasi Pembelian',
+                          style: Theme.of(context).textTheme.labelLarge,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment(
+                            value: 'paiton',
+                            label: Text('Paiton'),
+                            icon: Icon(Icons.location_on_outlined, size: 16),
+                          ),
+                          ButtonSegment(
+                            value: 'luar_paiton',
+                            label: Text('Luar Paiton'),
+                            icon: Icon(Icons.place_outlined, size: 16),
+                          ),
+                        ],
+                        selected: {_lokasiPembelian},
+                        style: SegmentedButton.styleFrom(
+                          selectedBackgroundColor:
+                              AppColors.primary.withValues(alpha: 0.14),
+                          selectedForegroundColor: AppColors.darkTeal,
+                          foregroundColor: AppColors.slateBlue,
+                          side: BorderSide(
+                            color:
+                                AppColors.slateBlue.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        onSelectionChanged: (selection) {
+                          setState(() {
+                            _lokasiPembelian = selection.first;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  InputSectionCard(
+                    icon: Icons.local_gas_station_rounded,
+                    title: 'Pengisian BBM',
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _literController,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                decimal: true,
+                              ),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'[0-9.,]'),
+                                ),
+                              ],
+                              decoration: const InputDecoration(
+                                labelText: 'Liter',
+                                hintText: '0,000',
+                              ),
+                              onChanged: (_) {
+                                if (_syncing) {
+                                  return;
+                                }
+                                _lastEdited = 'liter';
+                                _syncFromLastEdited();
+                                setState(() {});
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _totalController,
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                RupiahInputFormatter(),
+                              ],
+                              decoration: const InputDecoration(
+                                labelText: 'Total Harga (Rp)',
+                                hintText: '0',
+                              ),
+                              onChanged: (_) {
+                                if (_syncing) {
+                                  return;
+                                }
+                                _lastEdited = 'total';
+                                _syncFromLastEdited();
+                                setState(() {});
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.price_check_outlined,
+                            size: 14,
+                            color: AppColors.slateBlue.withValues(alpha: 0.7),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Harga per liter: '
+                            '${formatRupiah(_hargaPerLiter)}',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: AppColors.slateBlue,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildEstimateCard(),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed:
+                          provider.isSubmitting || !_canSubmit ? null : _submit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.success,
+                        disabledBackgroundColor:
+                            AppColors.slateBlue.withValues(alpha: 0.3),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.radiusMd),
+                        ),
+                      ),
+                      child: provider.isSubmitting
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2.5,
+                              ),
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'KONFIRMASI & SIMPAN',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.5,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Icon(
+                                  Icons.save_rounded,
+                                  size: 18,
+                                  color: Colors.white,
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+                  if (_kendaraanId != null && (harga == null || harga <= 0)) ...[
+                    const SizedBox(height: 10),
+                    Center(
+                      child: Text(
+                        'Harga BBM untuk tanggal dan jenis ini belum tersedia.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: AppColors.danger,
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 10),
+                  Center(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).maybePop(),
+                      child: Text(
+                        'Batal',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.slateBlue,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEstimateCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.secondary,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'TOTAL SEMENTARA',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.6,
+              color: Colors.white.withValues(alpha: 0.65),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _estimateRow('Pembelian BBM', formatRupiah(_total)),
+          const SizedBox(height: 12),
+          Divider(color: Colors.white.withValues(alpha: 0.12), height: 1),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Jumlah',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white.withValues(alpha: 0.75),
+                ),
+              ),
+              Text(
+                formatRupiah(_total),
+                style: GoogleFonts.inter(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _estimateRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 12.5,
+            color: Colors.white.withValues(alpha: 0.75),
+          ),
+        ),
+        Text(
+          value,
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HargaPerLiterBox extends StatelessWidget {
+  final double? harga;
+
+  const _HargaPerLiterBox({required this.harga});
+
+  @override
+  Widget build(BuildContext context) {
+    final available = harga != null && harga! > 0;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: available
+            ? AppColors.primary.withValues(alpha: 0.06)
+            : AppColors.danger.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        border: Border.all(
+          color: available
+              ? AppColors.primary.withValues(alpha: 0.2)
+              : AppColors.danger.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            available ? Icons.price_check_outlined : Icons.info_outline,
+            color: available ? AppColors.primary : AppColors.danger,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Harga per Liter',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: available
+                        ? AppColors.slateBlue
+                        : AppColors.danger,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  available
+                      ? '${formatRupiah(harga!)} / liter'
+                      : 'Belum ada harga untuk tanggal ini',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: available ? AppColors.darkTeal : AppColors.danger,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
