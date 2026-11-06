@@ -45,13 +45,15 @@ class _AdvancedStatCardState extends State<AdvancedStatCard>
       vsync: this,
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
-    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _opacityAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     _controller.forward();
   }
@@ -71,7 +73,9 @@ class _AdvancedStatCardState extends State<AdvancedStatCard>
         child: GestureDetector(
           onTap: widget.onTap,
           child: MouseRegion(
-            cursor: widget.onTap != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
+            cursor: widget.onTap != null
+                ? SystemMouseCursors.click
+                : SystemMouseCursors.basic,
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -82,16 +86,16 @@ class _AdvancedStatCardState extends State<AdvancedStatCard>
                     widget.backgroundColor.withValues(alpha: 0.5),
                   ],
                 ),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: widget.primaryColor.withValues(alpha: 0.15),
-                  width: 1.5,
+                  width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: widget.primaryColor.withValues(alpha: 0.1),
-                    blurRadius: 16,
-                    offset: const Offset(0, 8),
+                    color: widget.primaryColor.withValues(alpha: 0.08),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
@@ -99,27 +103,26 @@ class _AdvancedStatCardState extends State<AdvancedStatCard>
                 children: [
                   // Background decoration
                   Positioned(
-                    right: -20,
-                    bottom: -20,
+                    right: -14,
+                    bottom: -14,
                     child: Container(
-                      width: 100,
-                      height: 100,
+                      width: 64,
+                      height: 64,
                       decoration: BoxDecoration(
                         color: widget.primaryColor.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(50),
+                        shape: BoxShape.circle,
                       ),
                     ),
                   ),
                   // Content
                   Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         // Header dengan icon dan label
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
@@ -129,36 +132,45 @@ class _AdvancedStatCardState extends State<AdvancedStatCard>
                                   Text(
                                     widget.label,
                                     style: GoogleFonts.poppins(
-                                      fontSize: 12,
+                                      fontSize: 11,
                                       fontWeight: FontWeight.w500,
                                       color: PlnColors.textSecondary,
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(height: 4),
-                                  Text(
-                                    widget.value,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w700,
-                                      color: widget.primaryColor,
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      widget.value,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: widget.primaryColor,
+                                        letterSpacing: -0.2,
+                                      ),
+                                      maxLines: 1,
                                     ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
                               ),
                             ),
+                            const SizedBox(width: 6),
                             Container(
-                              width: 48,
-                              height: 48,
+                              width: 36,
+                              height: 36,
                               decoration: BoxDecoration(
-                                color: widget.primaryColor.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(14),
+                                color: widget.primaryColor.withValues(
+                                  alpha: 0.1,
+                                ),
+                                borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(
                                 widget.icon,
                                 color: widget.primaryColor,
-                                size: 24,
+                                size: 18,
                               ),
                             ),
                           ],
@@ -170,31 +182,36 @@ class _AdvancedStatCardState extends State<AdvancedStatCard>
                               if (widget.change != null) ...[
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
+                                    horizontal: 6,
+                                    vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
                                     color: widget.isPositive
-                                        ? PlnColors.success.withValues(alpha: 0.1)
-                                        : PlnColors.danger.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(6),
+                                        ? PlnColors.success.withValues(
+                                            alpha: 0.1,
+                                          )
+                                        : PlnColors.danger.withValues(
+                                            alpha: 0.1,
+                                          ),
+                                    borderRadius: BorderRadius.circular(5),
                                   ),
                                   child: Row(
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Icon(
                                         widget.isPositive
                                             ? Icons.trending_up
                                             : Icons.trending_down,
-                                        size: 14,
+                                        size: 12,
                                         color: widget.isPositive
                                             ? PlnColors.success
                                             : PlnColors.danger,
                                       ),
-                                      const SizedBox(width: 4),
+                                      const SizedBox(width: 2),
                                       Text(
                                         '${widget.change!.toStringAsFixed(1)}%',
                                         style: GoogleFonts.poppins(
-                                          fontSize: 11,
+                                          fontSize: 10,
                                           fontWeight: FontWeight.w600,
                                           color: widget.isPositive
                                               ? PlnColors.success
@@ -206,14 +223,15 @@ class _AdvancedStatCardState extends State<AdvancedStatCard>
                                 ),
                               ],
                               if (widget.subtitle != null) ...[
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
                                     widget.subtitle!,
                                     style: GoogleFonts.poppins(
-                                      fontSize: 11,
+                                      fontSize: 10,
                                       color: PlnColors.textSecondary,
                                     ),
+                                    maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),

@@ -8,10 +8,7 @@ import '../models/pemakaian_bbm.dart';
 class AdvancedChartWidget extends StatefulWidget {
   final List<PemakaianBbm> pemakaianList;
 
-  const AdvancedChartWidget({
-    super.key,
-    required this.pemakaianList,
-  });
+  const AdvancedChartWidget({super.key, required this.pemakaianList});
 
   @override
   State<AdvancedChartWidget> createState() => _AdvancedChartWidgetState();
@@ -20,8 +17,9 @@ class AdvancedChartWidget extends StatefulWidget {
 class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
     with SingleTickerProviderStateMixin {
   String _selectedPeriod = '7days'; // 7days, 30days, month
+  String _selectedMetric = 'liter'; // liter, cost
   late AnimationController _animationController;
-  late Animation<double> _slideAnimation;
+  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
@@ -31,8 +29,9 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
       vsync: this,
     );
 
-    _slideAnimation = Tween<double>(begin: 0.3, end: 0.0)
-        .animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic));
+    _scaleAnimation = Tween<double>(begin: 0.97, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
+    );
 
     _animationController.forward();
   }
@@ -43,37 +42,64 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
     super.dispose();
   }
 
+  void _selectPeriod(String value) {
+    if (_selectedPeriod == value) return;
+    setState(() => _selectedPeriod = value);
+    _animationController.forward(from: 0);
+  }
+
+  void _selectMetric(String value) {
+    if (_selectedMetric == value) return;
+    setState(() => _selectedMetric = value);
+    _animationController.forward(from: 0);
+  }
+
   Map<String, dynamic> _calculateChartData() {
     final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
     List<PemakaianBbm> filteredData = [];
     String periodLabel = '';
+    int daysSpan = 7;
 
     switch (_selectedPeriod) {
       case '7days':
-        final sevenDaysAgo = now.subtract(const Duration(days: 7));
+        final start = today.subtract(const Duration(days: 6));
         filteredData = widget.pemakaianList
-            .where((item) => item.tanggal.isAfter(sevenDaysAgo))
+            .where((item) => !_dateOnly(item.tanggal).isBefore(start))
             .toList();
         periodLabel = 'Terakhir 7 Hari';
+        daysSpan = 7;
         break;
       case '30days':
-        final thirtyDaysAgo = now.subtract(const Duration(days: 30));
+        final start = today.subtract(const Duration(days: 29));
         filteredData = widget.pemakaianList
-            .where((item) => item.tanggal.isAfter(thirtyDaysAgo))
+            .where((item) => !_dateOnly(item.tanggal).isBefore(start))
             .toList();
         periodLabel = 'Terakhir 30 Hari';
+        daysSpan = 30;
         break;
       case 'month':
         filteredData = widget.pemakaianList
-            .where((item) => item.tanggal.year == now.year && item.tanggal.month == now.month)
+            .where(
+              (item) =>
+                  item.tanggal.year == now.year &&
+                  item.tanggal.month == now.month,
+            )
             .toList();
         periodLabel = 'Bulan ${DateFormat('MMMM', 'id_ID').format(now)}';
+        daysSpan = now.day;
         break;
     }
 
-    final totalLiter = filteredData.fold<double>(0, (sum, item) => sum + item.liter);
-    final totalCost = filteredData.fold<double>(0, (sum, item) => sum + item.jumlah);
-    final avgDaily = filteredData.isEmpty ? 0.0 : totalLiter / (filteredData.length);
+    final totalLiter = filteredData.fold<double>(
+      0,
+      (sum, item) => sum + item.liter,
+    );
+    final totalCost = filteredData.fold<double>(
+      0,
+      (sum, item) => sum + item.jumlah,
+    );
+    final avgDaily = daysSpan <= 0 ? 0.0 : totalLiter / daysSpan;
 
     return {
       'data': filteredData,
@@ -85,38 +111,96 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
     };
   }
 
+  DateTime _dateOnly(DateTime date) =>
+      DateTime(date.year, date.month, date.day);
+
+  List<_BarData> _buildBars(List<PemakaianBbm> data) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final bars = <_BarData>[];
+
+    double sumBetween(DateTime start, DateTime endExclusive) {
+      var sum = 0.0;
+      for (final item in data) {
+        final date = _dateOnly(item.tanggal);
+        if (!date.isBefore(start) && date.isBefore(endExclusive)) {
+          sum += _selectedMetric == 'liter' ? item.liter : item.jumlah;
+        }
+      }
+      return sum;
+    }
+
+    if (_selectedPeriod == '7days') {
+      for (var i = 6; i >= 0; i--) {
+        final start = today.subtract(Duration(days: i));
+        final end = start.add(const Duration(days: 1));
+        bars.add(
+          _BarData(
+            DateFormat('E', 'id_ID').format(start),
+            sumBetween(start, end),
+          ),
+        );
+      }
+      return bars;
+    }
+
+    if (_selectedPeriod == '30days') {
+      final start = today.subtract(const Duration(days: 29));
+      for (var i = 0; i < 5; i++) {
+        final bucketStart = start.add(Duration(days: i * 6));
+        final bucketEnd = bucketStart.add(const Duration(days: 6));
+        bars.add(
+          _BarData(
+            DateFormat('d/M', 'id_ID').format(bucketStart),
+            sumBetween(bucketStart, bucketEnd),
+          ),
+        );
+      }
+      return bars;
+    }
+
+    final monthStart = DateTime(now.year, now.month, 1);
+    final nextMonth = DateTime(now.year, now.month + 1, 1);
+    var bucketStart = monthStart;
+    var week = 1;
+    while (bucketStart.isBefore(nextMonth)) {
+      final bucketEnd = bucketStart.add(const Duration(days: 7));
+      final cappedEnd = bucketEnd.isAfter(nextMonth) ? nextMonth : bucketEnd;
+      bars.add(_BarData('M$week', sumBetween(bucketStart, cappedEnd)));
+      bucketStart = cappedEnd;
+      week++;
+    }
+    return bars;
+  }
+
   @override
   Widget build(BuildContext context) {
-    _animationController.reset();
-    _animationController.forward();
-
     final chartData = _calculateChartData();
     final data = chartData['data'] as List<PemakaianBbm>;
     final totalLiter = chartData['totalLiter'] as double;
     final totalCost = chartData['totalCost'] as double;
     final avgDaily = chartData['avgDaily'] as double;
     final periodLabel = chartData['periodLabel'] as String;
+    final bars = _buildBars(data);
+    final hasPeriodData = bars.any((bar) => bar.value > 0);
 
     return ScaleTransition(
-      scale: _slideAnimation.drive(Tween<double>(begin: 0.9, end: 1.0)),
+      scale: _scaleAnimation,
       child: Container(
         decoration: BoxDecoration(
           color: PlnColors.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: PlnColors.border,
-            width: 1,
-          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: PlnColors.border, width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 12,
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
               offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -129,18 +213,19 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Grafik Pemakaian',
+                        'Grafik Pemakaian BBM',
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: PlnColors.textPrimary,
+                          letterSpacing: -0.3,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
-                        periodLabel,
+                        '$periodLabel • ${_selectedMetric == 'liter' ? 'Liter' : 'Rupiah'}',
                         style: GoogleFonts.poppins(
-                          fontSize: 12,
+                          fontSize: 11,
                           fontWeight: FontWeight.w500,
                           color: PlnColors.textSecondary,
                         ),
@@ -149,57 +234,101 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
                   ),
                   // Icon
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: 38,
+                    height: 38,
                     decoration: BoxDecoration(
                       color: PlnColors.primaryBlue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
                       Icons.bar_chart_rounded,
                       color: PlnColors.primaryBlue,
-                      size: 22,
+                      size: 20,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
 
               // Period selector
               Container(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
                   color: PlnColors.background,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(9),
                 ),
                 child: Row(
                   children: [
                     _buildPeriodButton('7 Hari', '7days'),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 3),
                     _buildPeriodButton('30 Hari', '30days'),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 3),
                     _buildPeriodButton('Bulan Ini', 'month'),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 10),
+
+              // Metrik grafik
+              Row(
+                children: [
+                  Text(
+                    'Tampilkan',
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      color: PlnColors.textSecondary,
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: PlnColors.background,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildMetricButton('Liter', 'liter'),
+                        const SizedBox(width: 2),
+                        _buildMetricButton('Rupiah', 'cost'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
 
               // Chart representation
-              if (data.isEmpty)
+              if (!hasPeriodData)
                 Container(
-                  padding: const EdgeInsets.all(32),
+                  height: 150,
+                  alignment: Alignment.center,
                   child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
                         Icons.bar_chart_outlined,
-                        size: 48,
+                        size: 40,
                         color: PlnColors.border,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
                       Text(
-                        'Belum ada data untuk periode ini',
+                        'Belum ada data pemakaian BBM',
+                        textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
                           fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: PlnColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Grafik akan muncul setelah ada transaksi tercatat.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
                           color: PlnColors.textSecondary,
                         ),
                       ),
@@ -209,13 +338,8 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
               else
                 Column(
                   children: [
-                    // Simple bar chart visualization
-                    Container(
-                      height: 180,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: _buildSimpleChart(data, totalLiter),
-                    ),
-                    const SizedBox(height: 20),
+                    _buildBarChart(bars),
+                    const SizedBox(height: 16),
                     // Stats grid
                     Row(
                       children: [
@@ -227,7 +351,7 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
                             PlnColors.primaryBlue,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: _buildStatItem(
                             'Total Biaya',
@@ -242,7 +366,7 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     Row(
                       children: [
                         Expanded(
@@ -253,7 +377,7 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
                             PlnColors.success,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: _buildStatItem(
                             'Jumlah Isi',
@@ -279,17 +403,13 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            setState(() {
-              _selectedPeriod = value;
-            });
-          },
-          borderRadius: BorderRadius.circular(8),
+          onTap: () => _selectPeriod(value),
+          borderRadius: BorderRadius.circular(7),
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: 7),
             decoration: BoxDecoration(
               color: isSelected ? PlnColors.primaryBlue : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(7),
             ),
             child: Text(
               label,
@@ -306,76 +426,129 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
     );
   }
 
-  Widget _buildSimpleChart(List<PemakaianBbm> data, double maxValue) {
-    final maxLiter = maxValue > 0 ? maxValue : 10;
+  Widget _buildMetricButton(String label, String value) {
+    final isSelected = _selectedMetric == value;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _selectMetric(value),
+        borderRadius: BorderRadius.circular(6),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: isSelected ? PlnColors.primaryBlue : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: isSelected ? Colors.white : PlnColors.textSecondary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-    // Group data by day for 7/30 days, or by week for month
-    Map<String, double> groupedData = {};
+  Widget _buildBarChart(List<_BarData> bars) {
+    var maxValue = 0.0;
+    for (final bar in bars) {
+      if (bar.value > maxValue) maxValue = bar.value;
+    }
+    if (maxValue <= 0) maxValue = 1;
 
-    for (var item in data) {
-      String key;
-      if (_selectedPeriod == 'month') {
-        final week = ((item.tanggal.day - 1) ~/ 7) + 1;
-        key = 'Minggu $week';
-      } else {
-        key = DateFormat('d MMM', 'id_ID').format(item.tanggal);
+    return SizedBox(
+      height: 150,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: bars.map((bar) {
+          final ratio = (bar.value / maxValue).clamp(0.0, 1.0);
+          final isMax = bar.value > 0 && bar.value == maxValue;
+          final gap = bars.length > 5 ? 3.0 : 6.0;
+
+          return Expanded(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: gap),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      _compactValue(bar.value),
+                      style: GoogleFonts.poppins(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        color: isMax
+                            ? PlnColors.primaryBlue
+                            : PlnColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Container(
+                    height: 100 * ratio + (bar.value > 0 ? 3 : 0),
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [
+                          PlnColors.primaryBlue,
+                          PlnColors.primaryBlue.withValues(
+                            alpha: isMax ? 0.7 : 0.45,
+                          ),
+                        ],
+                      ),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(6),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  SizedBox(
+                    height: 14,
+                    child: Text(
+                      bar.label,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w500,
+                        color: PlnColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  String _compactValue(double value) {
+    if (value <= 0) return '0';
+
+    if (_selectedMetric == 'cost') {
+      if (value >= 1000000) {
+        return '${(value / 1000000).toStringAsFixed(value >= 10000000 ? 0 : 1)}jt';
       }
-
-      groupedData[key] = (groupedData[key] ?? 0) + item.liter;
+      if (value >= 1000) {
+        return '${(value / 1000).toStringAsFixed(0)}rb';
+      }
+      return value.toStringAsFixed(0);
     }
 
-    final entries = groupedData.entries.toList();
-    if (entries.isEmpty) return const SizedBox.shrink();
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: entries.asMap().entries.map((entry) {
-        final label = entry.value.key;
-        final value = entry.value.value;
-        final percentage = (value / maxLiter).clamp(0.0, 1.0);
-
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            // Bar
-            Container(
-              width: 24,
-              height: 120 * percentage,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [
-                    PlnColors.primaryBlue,
-                    PlnColors.primaryBlue.withValues(alpha: 0.5),
-                  ],
-                ),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(8),
-                  topRight: Radius.circular(8),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            // Label
-            SizedBox(
-              width: 40,
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  color: PlnColors.textSecondary,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        );
-      }).toList(),
-    );
+    if (value >= 1000) {
+      return '${(value / 1000).toStringAsFixed(1)}rb';
+    }
+    return value.toStringAsFixed(value >= 10 ? 0 : 1);
   }
 
   Widget _buildStatItem(
@@ -385,27 +558,24 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
     Color color,
   ) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withValues(alpha: 0.15),
-          width: 1,
-        ),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.15), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, size: 14, color: color),
-              const SizedBox(width: 6),
+              Icon(icon, size: 13, color: color),
+              const SizedBox(width: 5),
               Expanded(
                 child: Text(
                   label,
                   style: GoogleFonts.poppins(
-                    fontSize: 11,
+                    fontSize: 10,
                     fontWeight: FontWeight.w500,
                     color: PlnColors.textSecondary,
                   ),
@@ -415,19 +585,29 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: color,
+          const SizedBox(height: 3),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+              maxLines: 1,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
   }
+}
+
+class _BarData {
+  final String label;
+  final double value;
+
+  const _BarData(this.label, this.value);
 }

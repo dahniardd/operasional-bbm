@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -32,7 +33,6 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
   bool _isLoading = true;
   Map<String, dynamic> _stats = {};
   List<PemakaianBbm> _recentTransactions = [];
-  int? _expandedTransactionIndex;
 
   @override
   bool get wantKeepAlive => true;
@@ -74,35 +74,55 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
       final allData = provider.items;
 
       // Today statistics
-      final todayData =
-          allData.where((item) {
-            final itemDate =
-                DateTime(item.tanggal.year, item.tanggal.month, item.tanggal.day);
-            return itemDate == today;
-          }).toList();
+      final todayData = allData.where((item) {
+        final itemDate = DateTime(
+          item.tanggal.year,
+          item.tanggal.month,
+          item.tanggal.day,
+        );
+        return itemDate == today;
+      }).toList();
 
-      final todayTotal = todayData.fold<double>(0, (sum, item) => sum + item.jumlah);
-      final todayLiter = todayData.fold<double>(0, (sum, item) => sum + item.liter);
+      final todayTotal = todayData.fold<double>(
+        0,
+        (sum, item) => sum + item.jumlah,
+      );
+      final todayLiter = todayData.fold<double>(
+        0,
+        (sum, item) => sum + item.liter,
+      );
 
       // Month statistics
       final monthData = allData
-          .where((item) =>
-              item.tanggal.year == thisMonth.year &&
-              item.tanggal.month == thisMonth.month)
+          .where(
+            (item) =>
+                item.tanggal.year == thisMonth.year &&
+                item.tanggal.month == thisMonth.month,
+          )
           .toList();
 
-      final monthTotal = monthData.fold<double>(0, (sum, item) => sum + item.jumlah);
-      final monthLiter = monthData.fold<double>(0, (sum, item) => sum + item.liter);
+      final monthTotal = monthData.fold<double>(
+        0,
+        (sum, item) => sum + item.jumlah,
+      );
+      final monthLiter = monthData.fold<double>(
+        0,
+        (sum, item) => sum + item.liter,
+      );
 
       // Last month for comparison
       final lastMonthData = allData
-          .where((item) =>
-              item.tanggal.year == lastMonth.year &&
-              item.tanggal.month == lastMonth.month)
+          .where(
+            (item) =>
+                item.tanggal.year == lastMonth.year &&
+                item.tanggal.month == lastMonth.month,
+          )
           .toList();
 
-      final lastMonthTotal =
-          lastMonthData.fold<double>(0, (sum, item) => sum + item.jumlah);
+      final lastMonthTotal = lastMonthData.fold<double>(
+        0,
+        (sum, item) => sum + item.jumlah,
+      );
 
       final percentageChange = lastMonthTotal > 0
           ? ((monthTotal - lastMonthTotal) / lastMonthTotal) * 100
@@ -149,65 +169,76 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
   Widget build(BuildContext context) {
     super.build(context);
 
-    return RefreshIndicator(
-      onRefresh: _loadDashboardData,
-      color: PlnColors.primaryBlue,
-      backgroundColor: Colors.white,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
       child: Container(
         color: PlnColors.background,
-        child: _isLoading
-            ? _buildLoadingState()
-            : FadeTransition(
-                opacity: _fadeAnimation,
-                child: CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    // Header
-                    SliverToBoxAdapter(
-                      child: AdvancedHeader(
-                        user: context.watch<AuthProvider>().user,
-                        onSettingsTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Settings akan segera tersedia'),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        },
-                        onNotificationTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Notifikasi akan segera tersedia'),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        },
+        child: Column(
+          children: [
+            AdvancedHeader(
+              user: context.watch<AuthProvider>().user,
+              onSettingsTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Settings akan segera tersedia'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+              onNotificationTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Notifikasi akan segera tersedia'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+            ),
+            Expanded(
+              child: _isLoading
+                  ? _buildLoadingState()
+                  : FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: RefreshIndicator(
+                        onRefresh: _loadDashboardData,
+                        color: PlnColors.primaryBlue,
+                        backgroundColor: Colors.white,
+                        child: MediaQuery.removePadding(
+                          context: context,
+                          removeTop: true,
+                          removeBottom: true,
+                          child: CustomScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            slivers: [
+                              SliverToBoxAdapter(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const SizedBox(height: 12),
+                                    // Stats Section
+                                    _buildStatsSection(),
+                                    const SizedBox(height: 16),
+                                    // Quick Actions Section
+                                    _buildQuickActionsSection(),
+                                    const SizedBox(height: 16),
+                                    // Chart Section
+                                    _buildChartSection(),
+                                    const SizedBox(height: 16),
+                                    // Recent Transactions Section
+                                    _buildRecentTransactionsSection(),
+                                    // Ruang bawah agar tidak tertutup bottom nav.
+                                    const SizedBox(height: 120),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                    // Content
-                    SliverToBoxAdapter(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 24),
-                          // Stats Section
-                          _buildStatsSection(),
-                          const SizedBox(height: 32),
-                          // Quick Actions Section
-                          _buildQuickActionsSection(),
-                          const SizedBox(height: 32),
-                          // Chart Section
-                          _buildChartSection(),
-                          const SizedBox(height: 32),
-                          // Recent Transactions Section
-                          _buildRecentTransactionsSection(),
-                          const SizedBox(height: 40),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -222,10 +253,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
             height: 80,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  PlnColors.primaryBlue,
-                  PlnColors.darkNavy,
-                ],
+                colors: [PlnColors.primaryBlue, PlnColors.darkNavy],
               ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
@@ -273,17 +301,17 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                   Text(
                     'Ringkasan Hari Ini',
                     style: GoogleFonts.poppins(
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: PlnColors.textPrimary,
-                      letterSpacing: -0.5,
+                      letterSpacing: -0.3,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     'Lihat performa pemakaian BBM Anda',
                     style: GoogleFonts.poppins(
-                      fontSize: 12,
+                      fontSize: 11,
                       fontWeight: FontWeight.w400,
                       color: PlnColors.textSecondary,
                     ),
@@ -291,7 +319,10 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: PlnColors.primaryBlue.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -321,11 +352,13 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 10),
           GridView.count(
+            padding: EdgeInsets.zero,
             crossAxisCount: 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 1.5,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             children: [
@@ -342,7 +375,8 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
               ),
               AdvancedStatCard(
                 label: 'Total Liter',
-                value: '${(_stats['todayLiter'] as double? ?? 0).toStringAsFixed(1)} L',
+                value:
+                    '${(_stats['todayLiter'] as double? ?? 0).toStringAsFixed(1)} L',
                 icon: Icons.local_gas_station,
                 primaryColor: PlnColors.success,
                 backgroundColor: const Color(0xFFE8F9F5),
@@ -391,11 +425,13 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
               letterSpacing: -0.3,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           GridView.count(
+            padding: EdgeInsets.zero,
             crossAxisCount: 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 2.1,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             children: [
@@ -409,9 +445,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => InputStep1Screen(),
-                    ),
+                    MaterialPageRoute(builder: (_) => InputStep1Screen()),
                   ).then((_) => _loadDashboardData());
                 },
               ),
@@ -422,40 +456,6 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                 primaryColor: PlnColors.success,
                 backgroundColor: const Color(0xFFE8F9F5),
                 onTap: () => widget.onOpenHistory?.call(),
-              ),
-              AdvancedQuickAction(
-                label: 'Statistik',
-                description: 'Analisis pemakaian',
-                icon: Icons.bar_chart,
-                primaryColor: PlnColors.accentYellow,
-                backgroundColor: const Color(0xFFFEF3E2),
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Scroll ke bawah untuk melihat grafik detail'),
-                      behavior: SnackBarBehavior.floating,
-                      backgroundColor: PlnColors.primaryBlue,
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
-                },
-              ),
-              AdvancedQuickAction(
-                label: 'Kendaraan',
-                description: 'Kelola kendaraan Anda',
-                icon: Icons.directions_car,
-                primaryColor: PlnColors.primaryBlue,
-                backgroundColor: const Color(0xFFE8F4FF),
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Fitur kendaraan akan segera tersedia'),
-                      behavior: SnackBarBehavior.floating,
-                      backgroundColor: PlnColors.warning,
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
-                },
               ),
             ],
           ),
@@ -526,25 +526,18 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                 ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           if (_recentTransactions.isEmpty)
             Container(
               padding: const EdgeInsets.all(40),
               decoration: BoxDecoration(
                 color: PlnColors.surface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: PlnColors.border,
-                  width: 1,
-                ),
+                border: Border.all(color: PlnColors.border, width: 1),
               ),
               child: Column(
                 children: [
-                  Icon(
-                    Icons.inbox_outlined,
-                    size: 48,
-                    color: PlnColors.border,
-                  ),
+                  Icon(Icons.inbox_outlined, size: 48, color: PlnColors.border),
                   const SizedBox(height: 12),
                   Text(
                     'Belum ada riwayat pengisian',
@@ -567,58 +560,14 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
             )
           else
             ListView.separated(
+              padding: EdgeInsets.zero,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: _recentTransactions.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, _) => const SizedBox(height: 10),
               itemBuilder: (context, index) {
                 final tx = _recentTransactions[index];
-                return AdvancedTransactionCard(
-                  pemakaian: tx,
-                  isExpanded: _expandedTransactionIndex == index,
-                  onEdit: () {
-                    // Edit action
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Edit transaksi akan segera tersedia'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  },
-                  onDelete: () {
-                    // Delete action
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Hapus Transaksi'),
-                        content: const Text(
-                          'Apakah Anda yakin ingin menghapus transaksi ini?',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Batal'),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Delete transaksi akan segera tersedia'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            },
-                            child: const Text(
-                              'Hapus',
-                              style: TextStyle(color: PlnColors.danger),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                );
+                return AdvancedTransactionCard(pemakaian: tx);
               },
             ),
         ],

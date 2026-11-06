@@ -41,9 +41,10 @@ class _AdvancedQuickActionState extends State<AdvancedQuickAction>
       vsync: this,
     );
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.05,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
   }
 
   @override
@@ -54,6 +55,16 @@ class _AdvancedQuickActionState extends State<AdvancedQuickAction>
 
   @override
   Widget build(BuildContext context) {
+    final isPrimary = widget.isPrimary;
+    final labelColor = isPrimary ? Colors.white : PlnColors.textPrimary;
+    final descriptionColor = isPrimary
+        ? Colors.white.withValues(alpha: 0.78)
+        : PlnColors.textSecondary;
+    final iconBackground = isPrimary
+        ? Colors.white.withValues(alpha: 0.16)
+        : widget.primaryColor.withValues(alpha: 0.12);
+    final iconColor = isPrimary ? Colors.white : widget.primaryColor;
+
     return MouseRegion(
       onEnter: (_) {
         setState(() => _isHovered = true);
@@ -69,27 +80,33 @@ class _AdvancedQuickActionState extends State<AdvancedQuickAction>
           color: Colors.transparent,
           child: InkWell(
             onTap: widget.onTap,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    widget.backgroundColor,
-                    widget.backgroundColor.withValues(alpha: 0.6),
-                  ],
+                  colors: isPrimary
+                      ? [PlnColors.primaryBlue, PlnColors.darkNavy]
+                      : [
+                          widget.backgroundColor,
+                          widget.backgroundColor.withValues(alpha: 0.6),
+                        ],
                 ),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: widget.primaryColor.withValues(alpha: 0.2),
-                  width: 1.5,
+                  color: isPrimary
+                      ? Colors.white.withValues(alpha: 0.16)
+                      : widget.primaryColor.withValues(alpha: 0.2),
+                  width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: widget.primaryColor.withValues(alpha: _isHovered ? 0.2 : 0.08),
-                    blurRadius: _isHovered ? 16 : 12,
-                    offset: const Offset(0, 6),
+                    color: widget.primaryColor.withValues(
+                      alpha: _isHovered ? 0.18 : 0.07,
+                    ),
+                    blurRadius: _isHovered ? 14 : 10,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
@@ -97,62 +114,59 @@ class _AdvancedQuickActionState extends State<AdvancedQuickAction>
                 children: [
                   // Background accent
                   Positioned(
-                    right: -15,
-                    top: -15,
+                    right: -12,
+                    top: -12,
                     child: Container(
-                      width: 80,
-                      height: 80,
+                      width: 64,
+                      height: 64,
                       decoration: BoxDecoration(
-                        color: widget.primaryColor.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(40),
+                        color: isPrimary
+                            ? Colors.white.withValues(alpha: 0.06)
+                            : widget.primaryColor.withValues(alpha: 0.05),
+                        shape: BoxShape.circle,
                       ),
                     ),
                   ),
                   // Content
                   Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
                       children: [
                         // Icon container
                         Container(
-                          width: 44,
-                          height: 44,
+                          width: 38,
+                          height: 38,
                           decoration: BoxDecoration(
-                            color: widget.primaryColor.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(12),
+                            color: iconBackground,
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Icon(
-                            widget.icon,
-                            color: widget.primaryColor,
-                            size: 24,
-                          ),
+                          child: Icon(widget.icon, color: iconColor, size: 20),
                         ),
+                        const SizedBox(width: 10),
                         // Label dan description
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.end,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
                                 widget.label,
                                 style: GoogleFonts.poppins(
-                                  fontSize: 14,
+                                  fontSize: 13,
                                   fontWeight: FontWeight.w700,
-                                  color: PlnColors.textPrimary,
+                                  color: labelColor,
                                 ),
-                                maxLines: 2,
+                                maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               if (widget.description != null) ...[
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 2),
                                 Text(
                                   widget.description!,
                                   style: GoogleFonts.poppins(
-                                    fontSize: 11,
+                                    fontSize: 10,
                                     fontWeight: FontWeight.w400,
-                                    color: PlnColors.textSecondary,
+                                    color: descriptionColor,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -162,20 +176,24 @@ class _AdvancedQuickActionState extends State<AdvancedQuickAction>
                           ),
                         ),
                         // Arrow indicator
-                        if (widget.isPrimary)
+                        if (widget.isPrimary) ...[
+                          const SizedBox(width: 6),
                           Container(
-                            width: 24,
-                            height: 24,
+                            width: 22,
+                            height: 22,
                             decoration: BoxDecoration(
-                              color: widget.primaryColor.withValues(alpha: 0.15),
+                              color: isPrimary
+                                  ? Colors.white.withValues(alpha: 0.18)
+                                  : widget.primaryColor.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Icon(
                               Icons.arrow_forward,
-                              color: widget.primaryColor,
-                              size: 14,
+                              color: iconColor,
+                              size: 13,
                             ),
                           ),
+                        ],
                       ],
                     ),
                   ),
