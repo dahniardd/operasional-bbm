@@ -28,7 +28,7 @@ class OperasionalBbmApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PemakaianBbmProvider()),
       ],
       child: MaterialApp(
-        title: 'Operasional BBM',
+        title: 'e-BBM',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         home: const SplashScreen(),
