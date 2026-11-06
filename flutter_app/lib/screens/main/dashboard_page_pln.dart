@@ -8,7 +8,7 @@ import '../../models/pemakaian_bbm.dart';
 import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/pemakaian_bbm_provider.dart';
-import '../input_bbm/input_step1_screen.dart';
+import '../input_bbm/input_bbm_screen.dart';
 import 'history_page.dart';
 
 class DashboardPagePln extends StatefulWidget {
@@ -452,7 +452,7 @@ class _DashboardPagePlnState extends State<DashboardPagePln>
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const InputStep1Screen(),
+                      builder: (_) => const InputBbmScreen(),
                     ),
                   ).then((_) => _loadDashboardData());
                 },
