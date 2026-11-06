@@ -429,8 +429,6 @@ class _PemakaianListState extends State<_PemakaianList>
   void _detail(Map<String, dynamic> m) {
     final liter = (m['liter'] as num).toDouble();
     final rp = (m['rp'] as num).toDouble();
-    final oli = (m['service_oli'] as num).toDouble();
-    final jasa = (m['jasa'] as num).toDouble();
     final jumlah = (m['jumlah'] as num).toDouble();
     final paiton = m['lokasi_pembelian'] == 'paiton';
     final pencatat = (m['pencatat'] ?? '-').toString();
@@ -672,18 +670,7 @@ class _PemakaianListState extends State<_PemakaianList>
                   if (liter > 0)
                     baris(Icons.speed_outlined, 'Rata-rata per liter',
                         _rp(rp / liter)),
-                ]),
-                const SizedBox(height: 12),
-
-                // Rincian biaya
-                kartu('Rincian Biaya', [
-                  baris(Icons.receipt_long_outlined, 'Biaya BBM', _rp(rp)),
-                  baris(Icons.oil_barrel_outlined, 'Service oli', _rp(oli),
-                      redup: oli == 0),
-                  baris(Icons.build_outlined, 'Jasa', _rp(jasa),
-                      redup: jasa == 0),
-                  Divider(height: 12, color: PlnColors.border),
-                  baris(Icons.payments_outlined, 'Total', _rp(jumlah),
+                  baris(Icons.receipt_long_outlined, 'Biaya BBM', _rp(rp),
                       warnaNilai: PlnColors.primaryBlue),
                 ]),
                 const SizedBox(height: 14),
