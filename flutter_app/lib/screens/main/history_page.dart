@@ -440,7 +440,7 @@ class _PemakaianListState extends State<_PemakaianList>
     final jumlah = (m['jumlah'] as num).toDouble();
     final paiton = m['lokasi_pembelian'] == 'paiton';
     final pencatat = (m['pencatat'] ?? '-').toString();
-    final buktiUrl = (m['bukti_bbm_url'] ?? '').toString();
+    final fotoUrl = (m['bukti_bbm_url'] ?? '').toString();
     final sub = [m['nama_jenis'], m['unit']]
         .where((e) => e != null && '$e'.isNotEmpty)
         .join(' • ');
@@ -682,64 +682,13 @@ class _PemakaianListState extends State<_PemakaianList>
                   baris(Icons.receipt_long_outlined, 'Biaya BBM', _rp(rp),
                       warnaNilai: PlnColors.primaryBlue),
                 ]),
+                const SizedBox(height: 12),
 
-                if (buktiUrl.isNotEmpty) ...[
-                  const SizedBox(height: 14),
-                  kartu('Bukti BBM', [
-                    const SizedBox(height: 6),
-                    GestureDetector(
-                      onTap: () => showDialog(
-                        context: context,
-                        builder: (_) => Dialog(
-                          backgroundColor: Colors.transparent,
-                          insetPadding: const EdgeInsets.all(12),
-                          child: InteractiveViewer(
-                            child: Image.network(
-                              buktiUrl,
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, _, _) => Text(
-                                'Foto bukti tidak dapat dimuat.',
-                                style: _poppins(12, FontWeight.w400,
-                                    Colors.white),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.network(
-                          buktiUrl,
-                          width: double.infinity,
-                          height: 200,
-                          fit: BoxFit.cover,
-                          loadingBuilder: (_, child, progress) {
-                            if (progress == null) return child;
-                            return const SizedBox(
-                              height: 200,
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2.5),
-                              ),
-                            );
-                          },
-                          errorBuilder: (_, _, _) => Container(
-                            height: 120,
-                            alignment: Alignment.center,
-                            color: PlnColors.background,
-                            child: Text(
-                              'Foto bukti tidak dapat dimuat.',
-                              style: _poppins(12, FontWeight.w400,
-                                  PlnColors.textSecondary),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                  ]),
-                ],
-
+                // Bukti foto struk
+                kartu('Bukti Foto Struk', [
+                  const SizedBox(height: 4),
+                  _BuktiFoto(url: fotoUrl),
+                ]),
                 const SizedBox(height: 14),
 
                 // Pencatat
@@ -1111,10 +1060,28 @@ class _Kartu extends StatelessWidget {
         child: Text(t, style: _poppins(11, FontWeight.w600, fg)),
       );
 
+  Widget _chipFoto() => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: _bgBiru,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.image_outlined, size: 13, color: PlnColors.primaryBlue),
+            const SizedBox(width: 4),
+            Text('Foto',
+                style: _poppins(11, FontWeight.w600, PlnColors.primaryBlue)),
+          ],
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     final paiton = m['lokasi_pembelian'] == 'paiton';
     final pencatat = (m['pencatat'] ?? '-').toString();
+    final adaFoto = (m['bukti_bbm_url'] ?? '').toString().isNotEmpty;
 
     return Container(
       decoration: BoxDecoration(
@@ -1186,6 +1153,7 @@ class _Kartu extends StatelessWidget {
                     ),
                     _chip('${_liter(m['liter'] as num)} L',
                         PlnColors.textSecondary, PlnColors.background),
+                    if (adaFoto) _chipFoto(),
                   ],
                 ),
                 if (tampilkanPencatat) ...[
@@ -1217,6 +1185,187 @@ class _Kartu extends StatelessWidget {
                   ),
                 ],
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// Foto bukti
+// ============================================================
+
+Widget _loadingFoto(BuildContext context, Widget child, ImageChunkEvent? p) {
+  if (p == null) return child;
+  final total = p.expectedTotalBytes;
+  return Container(
+    color: PlnColors.surface,
+    alignment: Alignment.center,
+    child: CircularProgressIndicator(
+      value: total != null ? p.cumulativeBytesLoaded / total : null,
+      color: PlnColors.primaryBlue,
+      strokeWidth: 3,
+    ),
+  );
+}
+
+/// Foto struk di popup detail. Ketuk untuk membuka layar penuh.
+class _BuktiFoto extends StatefulWidget {
+  final String? url;
+  const _BuktiFoto({required this.url});
+
+  @override
+  State<_BuktiFoto> createState() => _BuktiFotoState();
+}
+
+class _BuktiFotoState extends State<_BuktiFoto> {
+  int _percobaan = 0;
+
+  String get _src {
+    final u = widget.url!;
+    return _percobaan == 0 ? u : '$u${u.contains('?') ? '&' : '?'}r=$_percobaan';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final url = widget.url;
+
+    if (url == null || url.isEmpty) {
+      return Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        decoration: BoxDecoration(
+          color: PlnColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: PlnColors.border),
+        ),
+        child: Column(
+          children: [
+            Icon(Icons.image_not_supported_outlined,
+                size: 30, color: PlnColors.border),
+            const SizedBox(height: 8),
+            Text('Tidak ada foto bukti',
+                style:
+                    _poppins(12, FontWeight.w500, PlnColors.textSecondary)),
+          ],
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: GestureDetector(
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              fullscreenDialog: true,
+              builder: (_) => _FotoViewer(url: _src),
+            ),
+          ),
+          child: Stack(
+            children: [
+              SizedBox(
+                width: double.infinity,
+                height: 220,
+                child: Image.network(
+                  _src,
+                  fit: BoxFit.cover,
+                  loadingBuilder: _loadingFoto,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: PlnColors.surface,
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.broken_image_outlined,
+                            size: 36, color: PlnColors.textSecondary),
+                        const SizedBox(height: 8),
+                        Text('Foto tidak dapat dimuat',
+                            style: _poppins(12, FontWeight.w500,
+                                PlnColors.textSecondary)),
+                        TextButton(
+                          onPressed: () => setState(() => _percobaan++),
+                          child: const Text('Coba lagi'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 8,
+                bottom: 8,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.zoom_out_map_rounded,
+                          size: 14, color: Colors.white),
+                      const SizedBox(width: 6),
+                      Text('Perbesar',
+                          style: _poppins(11, FontWeight.w600, Colors.white)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Layar penuh: foto bisa dicubit untuk zoom dan digeser.
+class _FotoViewer extends StatelessWidget {
+  final String url;
+  const _FotoViewer({required this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text('Bukti Foto Struk',
+            style: _poppins(15, FontWeight.w600, Colors.white)),
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          minScale: 1,
+          maxScale: 5,
+          child: Image.network(
+            url,
+            fit: BoxFit.contain,
+            loadingBuilder: (context, child, p) {
+              if (p == null) return child;
+              final total = p.expectedTotalBytes;
+              return Center(
+                child: CircularProgressIndicator(
+                  value: total != null ? p.cumulativeBytesLoaded / total : null,
+                  color: Colors.white,
+                ),
+              );
+            },
+            errorBuilder: (_, __, ___) => Center(
+              child: Text('Foto tidak dapat dimuat',
+                  style: _poppins(13, FontWeight.w500, Colors.white70)),
             ),
           ),
         ),
