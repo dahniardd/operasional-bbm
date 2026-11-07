@@ -8,14 +8,14 @@ import '../models/user.dart';
 /// dalam satu komponen biru.
 class AdvancedHeader extends StatelessWidget {
   final User? user;
-  final VoidCallback? onSettingsTap;
-  final VoidCallback? onNotificationTap;
+
+  /// Dipanggil saat tombol profil di pojok kanan atas diketuk.
+  final VoidCallback? onProfileTap;
 
   const AdvancedHeader({
     super.key,
     this.user,
-    this.onSettingsTap,
-    this.onNotificationTap,
+    this.onProfileTap,
   });
 
   String _getGreeting() {
@@ -145,12 +145,10 @@ class AdvancedHeader extends StatelessWidget {
                       ),
                       const Spacer(),
                       _buildIconButton(
-                        Icons.notifications_outlined,
-                        onNotificationTap,
-                        showDot: true,
+                        Icons.person_outline_rounded,
+                        onProfileTap,
+                        tooltip: 'Profil',
                       ),
-                      const SizedBox(width: 8),
-                      _buildIconButton(Icons.settings_outlined, onSettingsTap),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -256,8 +254,9 @@ class AdvancedHeader extends StatelessWidget {
     IconData icon,
     VoidCallback? onTap, {
     bool showDot = false,
+    String? tooltip,
   }) {
-    return Material(
+    final button = Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
@@ -301,5 +300,8 @@ class AdvancedHeader extends StatelessWidget {
         ),
       ),
     );
+    return tooltip == null
+        ? button
+        : Tooltip(message: tooltip, child: button);
   }
 }

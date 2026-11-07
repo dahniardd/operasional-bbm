@@ -14,6 +14,7 @@ import '../../widgets/advanced_quick_action.dart';
 import '../../widgets/advanced_chart_widget.dart';
 import '../../widgets/advanced_transaction_card.dart';
 import '../input_bbm/input_bbm_screen.dart';
+import 'profile_screen.dart';
 
 class DashboardPageAdvanced extends StatefulWidget {
   /// Dipanggil saat user ingin membuka tab Riwayat (diatur oleh MainShell).
@@ -177,22 +178,9 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
           children: [
             AdvancedHeader(
               user: context.watch<AuthProvider>().user,
-              onSettingsTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Settings akan segera tersedia'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
-              onNotificationTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Notifikasi akan segera tersedia'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
+              onProfileTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              ),
             ),
             Expanded(
               child: _isLoading
