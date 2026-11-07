@@ -192,6 +192,9 @@ class _PemakaianListState extends State<_PemakaianList>
     ('Luar Paiton', 'luar_paiton'),
   ];
 
+  /// Jumlah data per halaman.
+  static const _perPage = 20;
+
   final _scroll = ScrollController();
   final _items = <Map<String, dynamic>>[];
 
@@ -204,7 +207,6 @@ class _PemakaianListState extends State<_PemakaianList>
   double _totalRp = 0;
   double _totalLiter = 0;
   bool _loading = true;
-  bool _loadingMore = false;
   String? _error;
 
   bool get _mine => widget.scope == 'mine';
@@ -215,12 +217,6 @@ class _PemakaianListState extends State<_PemakaianList>
   @override
   void initState() {
     super.initState();
-    _scroll.addListener(() {
-      if (_scroll.hasClients &&
-          _scroll.position.pixels >= _scroll.position.maxScrollExtent - 240) {
-        _loadMore();
-      }
-    });
     _load();
   }
 
@@ -231,8 +227,9 @@ class _PemakaianListState extends State<_PemakaianList>
     super.dispose();
   }
 
-  /// Dipanggil dari luar (mis. setelah input baru) tanpa menampilkan spinner.
-  Future<void> reload() => _load(silent: true);
+  /// Dipanggil dari luar (mis. setelah input baru), tetap di halaman sekarang
+  /// tanpa menampilkan spinner.
+  Future<void> reload() => _load(silent: true, page: _page);
 
   Future<Map<String, dynamic>> _fetch(int page) async {
     final res = await ApiService().getPemakaianBbm(
@@ -240,12 +237,12 @@ class _PemakaianListState extends State<_PemakaianList>
       lokasiPembelian: _lokasi,
       scope: widget.scope,
       page: page,
-      perPage: 20,
+      perPage: _perPage,
     );
     return Map<String, dynamic>.from(res.data as Map);
   }
 
-  Future<void> _load({bool silent = false}) async {
+  Future<void> _load({bool silent = false, int page = 1}) async {
     if (!silent || _items.isEmpty) {
       setState(() {
         _loading = true;
@@ -253,15 +250,22 @@ class _PemakaianListState extends State<_PemakaianList>
       });
     }
     try {
-      final body = await _fetch(1);
+      final body = await _fetch(page);
       final data = (body['data'] as List).cast<Map<String, dynamic>>();
       final meta = body['meta'] as Map;
+
+      // Kalau halaman ini kosong (mis. data terakhir di halaman ini baru
+      // dihapus), mundur satu halaman.
+      if (data.isEmpty && page > 1) {
+        return _load(silent: silent, page: page - 1);
+      }
+
       if (!mounted) return;
       setState(() {
         _items
           ..clear()
           ..addAll(data);
-        _page = 1;
+        _page = page;
         _lastPage = (meta['last_page'] as num).toInt();
         _total = (meta['total'] as num).toInt();
         _totalRp = ((meta['total_jumlah'] ?? 0) as num).toDouble();
@@ -278,21 +282,10 @@ class _PemakaianListState extends State<_PemakaianList>
     }
   }
 
-  Future<void> _loadMore() async {
-    if (_loading || _loadingMore || _page >= _lastPage) return;
-    setState(() => _loadingMore = true);
-    try {
-      final body = await _fetch(_page + 1);
-      final data = (body['data'] as List).cast<Map<String, dynamic>>();
-      if (!mounted) return;
-      setState(() {
-        _items.addAll(data);
-        _page += 1;
-        _loadingMore = false;
-      });
-    } catch (_) {
-      if (mounted) setState(() => _loadingMore = false);
-    }
+  Future<void> _goToPage(int p) async {
+    if (p < 1 || p > _lastPage || p == _page || _loading) return;
+    if (_scroll.hasClients) _scroll.jumpTo(0);
+    await _load(page: p);
   }
 
   void _onSearch(String v) {
@@ -318,7 +311,8 @@ class _PemakaianListState extends State<_PemakaianList>
     final ya = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text('Hapus Transaksi', style: _poppins(16, FontWeight.w700, PlnColors.textPrimary)),
+        title: Text('Hapus Transaksi',
+            style: _poppins(16, FontWeight.w700, PlnColors.textPrimary)),
         content: Text(
           'Pemakaian ${m['plat_nomor']} tanggal ${_tgl(m['tanggal'])} '
           '(${_rp(m['jumlah'] as num)}) akan dihapus dan tidak bisa dikembalikan.',
@@ -343,7 +337,7 @@ class _PemakaianListState extends State<_PemakaianList>
       await ApiService().deletePemakaianBbm(m['id'] as int);
       if (!mounted) return;
       _snack('Data dihapus.');
-      _load(silent: true);
+      _load(silent: true, page: _page);
     } catch (e) {
       if (!mounted) return;
       _snack(_errorMessage(e), color: PlnColors.danger);
@@ -672,7 +666,7 @@ class _PemakaianListState extends State<_PemakaianList>
   Widget build(BuildContext context) {
     super.build(context); // wajib untuk AutomaticKeepAliveClientMixin
     return RefreshIndicator(
-      onRefresh: () => _load(silent: true),
+      onRefresh: () => _load(silent: true, page: _page),
       color: PlnColors.primaryBlue,
       backgroundColor: Colors.white,
       child: CustomScrollView(
@@ -713,16 +707,79 @@ class _PemakaianListState extends State<_PemakaianList>
               ),
             ),
           SliverToBoxAdapter(
-            child: _loadingMore
-                ? const Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                          color: PlnColors.primaryBlue, strokeWidth: 3),
-                    ),
-                  )
+            child: Column(
+              children: [
+                if (!_loading && _error == null && _lastPage > 1)
+                  _pagination(),
                 // Ruang bawah supaya tidak tertutup navigasi melayang.
-                : const SizedBox(height: 130),
+                const SizedBox(height: 130),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _pagination() {
+    final dari = (_page - 1) * _perPage + 1;
+    final sampai = dari + _items.length - 1;
+
+    Widget tombol(String label, IconData icon, bool aktif, VoidCallback onTap,
+        {bool ikonKanan = false}) {
+      final warna = aktif ? PlnColors.primaryBlue : PlnColors.border;
+      return Expanded(
+        child: GestureDetector(
+          onTap: aktif ? onTap : null,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: aktif ? PlnColors.primaryBlue : PlnColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: warna),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (!ikonKanan)
+                  Icon(icon,
+                      size: 18,
+                      color: aktif ? Colors.white : PlnColors.border),
+                if (!ikonKanan) const SizedBox(width: 4),
+                Text(label,
+                    style: _poppins(12, FontWeight.w600,
+                        aktif ? Colors.white : PlnColors.textSecondary)),
+                if (ikonKanan) const SizedBox(width: 4),
+                if (ikonKanan)
+                  Icon(icon,
+                      size: 18,
+                      color: aktif ? Colors.white : PlnColors.border),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      child: Column(
+        children: [
+          Text('Menampilkan $dari–$sampai dari $_total transaksi',
+              style: _poppins(11, FontWeight.w500, PlnColors.textSecondary)),
+          const SizedBox(height: 4),
+          Text('Halaman $_page dari $_lastPage',
+              style: _poppins(12, FontWeight.w700, PlnColors.textPrimary)),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              tombol('Sebelumnya', Icons.chevron_left_rounded, _page > 1,
+                  () => _goToPage(_page - 1)),
+              const SizedBox(width: 12),
+              tombol('Berikutnya', Icons.chevron_right_rounded,
+                  _page < _lastPage, () => _goToPage(_page + 1),
+                  ikonKanan: true),
+            ],
           ),
         ],
       ),
@@ -742,8 +799,8 @@ class _PemakaianListState extends State<_PemakaianList>
               hintText: 'Cari plat nomor atau tanggal…',
               hintStyle:
                   _poppins(13, FontWeight.w400, PlnColors.textSecondary),
-              prefixIcon:
-                  const Icon(Icons.search_rounded, color: PlnColors.textSecondary),
+              prefixIcon: const Icon(Icons.search_rounded,
+                  color: PlnColors.textSecondary),
               filled: true,
               fillColor: PlnColors.surface,
               contentPadding: const EdgeInsets.symmetric(vertical: 14),
@@ -812,7 +869,9 @@ class _PemakaianListState extends State<_PemakaianList>
               Expanded(
                 child: _Ringkas(
                   label: 'Total Liter',
-                  value: _loading ? '—' : '${_totalLiter.toStringAsFixed(1).replaceAll('.', ',')} L',
+                  value: _loading
+                      ? '—'
+                      : '${_totalLiter.toStringAsFixed(1).replaceAll('.', ',')} L',
                   note: _mine ? 'milik Anda' : 'hanya dilihat',
                   icon: Icons.local_gas_station,
                   warna: PlnColors.success,
@@ -888,7 +947,7 @@ class _PemakaianListState extends State<_PemakaianList>
                     _poppins(13, FontWeight.w400, PlnColors.textSecondary)),
             const SizedBox(height: 16),
             FilledButton(
-              onPressed: _load,
+              onPressed: () => _load(page: _page),
               style: FilledButton.styleFrom(
                   backgroundColor: PlnColors.primaryBlue),
               child: const Text('Coba Lagi'),
