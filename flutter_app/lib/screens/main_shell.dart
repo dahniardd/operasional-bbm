@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../config/app_colors.dart';
 import '../widgets/custom_bottom_nav.dart';
 import 'main/dashboard_page_advanced.dart' show DashboardPageAdvanced;
 import 'main/history_page.dart';
-import 'main/profile_screen.dart';
 import 'main/input_page.dart';
 import 'input_bbm/input_bbm_screen.dart';
 
@@ -43,128 +40,11 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    // Tidak ada AppBar di sini: Dashboard dan Riwayat sama-sama punya header
+    // biru sendiri (identitas aplikasi + tombol profil).
     return Scaffold(
       extendBody: true,
       backgroundColor: AppColors.background,
-      appBar: _currentIndex == _tabDashboard
-          ? null
-          : AppBar(
-              automaticallyImplyLeading: false,
-              toolbarHeight: 76,
-              elevation: 0,
-              scrolledUnderElevation: 0,
-              backgroundColor: AppColors.background,
-              surfaceTintColor: Colors.transparent,
-              systemOverlayStyle: SystemUiOverlayStyle.dark,
-              titleSpacing: 20,
-              title: Row(
-                children: [
-                  // Logo PLN
-                  SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: Image.asset(
-                      'assets/images/logo.png',
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.darkTeal,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: const Icon(
-                          Icons.bolt_rounded,
-                          color: AppColors.white,
-                          size: 26,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'PLN NP',
-                        style: GoogleFonts.inter(
-                          color: AppColors.darkTeal,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          height: 1.15,
-                        ),
-                      ),
-                      Text(
-                        'e-Operasional',
-                        style: GoogleFonts.inter(
-                          color: AppColors.navy,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w500,
-                          height: 1.15,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              actions: [
-                // Lonceng notifikasi
-                IconButton(
-                  tooltip: 'Notifikasi',
-                  onPressed: () {
-                    // TODO: buka halaman notifikasi
-                  },
-                  icon: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      const Icon(
-                        Icons.notifications_none_rounded,
-                        color: AppColors.slateBlue,
-                        size: 28,
-                      ),
-                      Positioned(
-                        right: 1,
-                        top: 0,
-                        child: Container(
-                          width: 10,
-                          height: 10,
-                          decoration: const BoxDecoration(
-                            color: AppColors.danger,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 4),
-                // Avatar: ketuk untuk membuka profil
-                Tooltip(
-                  message: 'Profil',
-                  child: Material(
-                    color: AppColors.darkTeal,
-                    shape: const CircleBorder(),
-                    child: InkWell(
-                      customBorder: const CircleBorder(),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const ProfileScreen(),
-                        ),
-                      ),
-                      child: const SizedBox(
-                        width: 48,
-                        height: 48,
-                        child: Icon(
-                          Icons.person_outline_rounded,
-                          color: AppColors.white,
-                          size: 26,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 20),
-              ],
-            ),
       body: IndexedStack(
         index: _currentIndex,
         children: [
