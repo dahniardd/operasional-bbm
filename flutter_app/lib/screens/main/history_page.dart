@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../config/pln_colors.dart';
 import '../../services/api_service.dart';
+import 'profile_screen.dart';
 
 // ============================================================
 // Helper format
@@ -137,117 +139,31 @@ class _HistoryPageState extends State<HistoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: PlnColors.background,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Riwayat Pengisian',
-                          style: _poppins(
-                              18, FontWeight.w700, PlnColors.textPrimary,
-                              ls: -0.5)),
-                      const SizedBox(height: 4),
-                      Text('Geser untuk melihat data driver lain',
-                          style: _poppins(
-                              12, FontWeight.w400, PlnColors.textSecondary)),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: PlnColors.primaryBlue.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.history,
-                      size: 20, color: PlnColors.primaryBlue),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: PlnColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: PlnColors.border),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Container(
+        color: PlnColors.background,
+        child: Column(
+          children: [
+            _RiwayatHeader(
+              onProfileTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
               ),
-              child: Row(
+            ),
+            _SlideSwitch(page: _page, onTab: _goTo),
+            Expanded(
+              child: PageView(
+                controller: _controller,
+                onPageChanged: (i) => setState(() => _page = i),
                 children: [
-                  _tab('Riwayat Saya', Icons.person_outline_rounded, 0),
-                  _tab('Driver Lain', Icons.groups_outlined, 1),
+                  _PemakaianList(
+                      key: _mineKey, scope: 'mine', isAdmin: _isAdmin),
+                  _PemakaianList(
+                      key: _othersKey, scope: 'others', isAdmin: _isAdmin),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: PageView(
-              controller: _controller,
-              onPageChanged: (i) => setState(() => _page = i),
-              children: [
-                _PemakaianList(
-                    key: _mineKey, scope: 'mine', isAdmin: _isAdmin),
-                _PemakaianList(
-                    key: _othersKey, scope: 'others', isAdmin: _isAdmin),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _tab(String label, IconData icon, int index) {
-    final aktif = _page == index;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => _goTo(index),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          padding: const EdgeInsets.symmetric(vertical: 11),
-          decoration: BoxDecoration(
-            gradient: aktif
-                ? const LinearGradient(
-                    colors: [PlnColors.primaryBlue, PlnColors.darkNavy],
-                  )
-                : null,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: aktif
-                ? [
-                    BoxShadow(
-                      color: PlnColors.primaryBlue.withValues(alpha: 0.25),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon,
-                  size: 18,
-                  color: aktif ? Colors.white : PlnColors.textSecondary),
-              const SizedBox(width: 6),
-              Text(label,
-                  style: _poppins(
-                      13,
-                      FontWeight.w600,
-                      aktif ? Colors.white : PlnColors.textSecondary)),
-            ],
-          ),
+          ],
         ),
       ),
     );
@@ -815,7 +731,7 @@ class _PemakaianListState extends State<_PemakaianList>
 
   Widget _header() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1368,6 +1284,265 @@ class _FotoViewer extends StatelessWidget {
                   style: _poppins(13, FontWeight.w500, Colors.white70)),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// Header Riwayat (gaya sama dengan header Dashboard)
+// ============================================================
+
+class _RiwayatHeader extends StatelessWidget {
+  final VoidCallback onProfileTap;
+
+  const _RiwayatHeader({required this.onProfileTap});
+
+  Widget _tombolProfil() {
+    return Tooltip(
+      message: 'Profil',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onProfileTap,
+          borderRadius: BorderRadius.circular(9),
+          child: Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(9),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.18),
+                width: 1,
+              ),
+            ),
+            child: Icon(
+              Icons.person_outline_rounded,
+              color: Colors.white.withValues(alpha: 0.9),
+              size: 18,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [PlnColors.primaryBlue, PlnColors.darkNavy],
+        ),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: PlnColors.primaryBlue.withValues(alpha: 0.2),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Hiasan lingkaran (sama dengan Dashboard)
+          Positioned(
+            right: -24,
+            top: -28,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.05),
+              ),
+            ),
+          ),
+          Positioned(
+            left: -40,
+            bottom: -60,
+            child: Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: PlnColors.accentYellow.withValues(alpha: 0.06),
+              ),
+            ),
+          ),
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
+              child: Column(
+                children: [
+                  // Identitas aplikasi + tombol profil
+                  Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(9),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.18),
+                          ),
+                        ),
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => const Icon(
+                            Icons.bolt_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 9),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'PLN NP',
+                            style: _poppins(10, FontWeight.w600,
+                                Colors.white.withValues(alpha: 0.9)),
+                          ),
+                          Text(
+                            'e-Operasional',
+                            style: _poppins(13, FontWeight.w700, Colors.white),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      _tombolProfil(),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Judul halaman
+                  Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.18),
+                          ),
+                        ),
+                        child: const Icon(Icons.history_rounded,
+                            color: Colors.white, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Riwayat Pengisian',
+                              style: _poppins(18, FontWeight.w700, Colors.white,
+                                  ls: -0.4),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Geser untuk melihat data driver lain',
+                              style: _poppins(11, FontWeight.w400,
+                                  Colors.white.withValues(alpha: 0.7)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ============================================================
+// Tombol geser: Riwayat Saya / Driver Lain (di bawah header)
+// ============================================================
+
+class _SlideSwitch extends StatelessWidget {
+  final int page;
+  final ValueChanged<int> onTab;
+  const _SlideSwitch({required this.page, required this.onTab});
+
+  Widget _tab(String label, IconData icon, int index) {
+    final aktif = page == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onTab(index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          decoration: BoxDecoration(
+            gradient: aktif
+                ? LinearGradient(
+                    colors: [PlnColors.primaryBlue, PlnColors.darkNavy],
+                  )
+                : null,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: aktif
+                ? [
+                    BoxShadow(
+                      color: PlnColors.primaryBlue.withValues(alpha: 0.25),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon,
+                  size: 18,
+                  color: aktif ? Colors.white : PlnColors.textSecondary),
+              const SizedBox(width: 6),
+              Text(label,
+                  style: _poppins(13, FontWeight.w600,
+                      aktif ? Colors.white : PlnColors.textSecondary)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: PlnColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: PlnColors.border),
+        ),
+        child: Row(
+          children: [
+            _tab('Riwayat Saya', Icons.person_outline_rounded, 0),
+            _tab('Driver Lain', Icons.groups_outlined, 1),
+          ],
         ),
       ),
     );
