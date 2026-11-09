@@ -35,9 +35,6 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
   String _jenisBbm = 'pertamax';
   String _lokasiPembelian = 'paiton';
 
-  bool _syncing = false;
-  String _lastEdited = 'liter';
-
   final ImagePicker _imagePicker = ImagePicker();
   Uint8List? _fotoBytes;
   String? _fotoName;
@@ -76,6 +73,10 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
 
     if (futures.isNotEmpty) {
       await Future.wait(futures);
+
+      if (mounted) {
+        setState(_resyncTotal);
+      }
     }
   }
 
@@ -125,48 +126,14 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
   }
 
   void _resyncTotal() {
-    if (_literController.text.isEmpty) {
-      return;
-    }
-
-    final harga = _hargaPerLiter;
-
-    if (harga <= 0) {
-      return;
-    }
-
-    _literToTotal(harga);
-  }
-
-  void _syncFromLastEdited() {
-    if (_syncing) {
-      return;
-    }
-
-    final harga = _hargaPerLiter;
-
-    if (harga <= 0) {
-      return;
-    }
-
-    if (_lastEdited == 'total') {
-      _totalToLiter(harga);
-    } else {
-      _literToTotal(harga);
-    }
-  }
-
-  void _literToTotal(double harga) {
-    _syncing = true;
-    _totalController.text =
-        formatRibuan((_liter * harga).round().toString());
-    _syncing = false;
+    _totalToLiter(_hargaPerLiter);
   }
 
   void _totalToLiter(double harga) {
     final total = parseAngka(_totalController.text);
 
     if (total == null || total <= 0 || harga <= 0) {
+      _literController.text = '';
       return;
     }
 
@@ -174,9 +141,7 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
     text = text.replaceFirst(RegExp(r'0+$'), '');
     text = text.replaceFirst(RegExp(r'\.$'), '');
 
-    _syncing = true;
     _literController.text = text.replaceAll('.', ',');
-    _syncing = false;
   }
 
   Future<void> _pilihSumberFoto() async {
@@ -594,33 +559,11 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      SegmentedButton<String>(
-                        segments: const [
-                          ButtonSegment(
-                            value: 'paiton',
-                            label: Text('Paiton'),
-                            icon: Icon(Icons.location_on_outlined, size: 16),
-                          ),
-                          ButtonSegment(
-                            value: 'luar_paiton',
-                            label: Text('Luar Paiton'),
-                            icon: Icon(Icons.place_outlined, size: 16),
-                          ),
-                        ],
-                        selected: {_lokasiPembelian},
-                        style: SegmentedButton.styleFrom(
-                          selectedBackgroundColor:
-                              AppColors.primary.withValues(alpha: 0.14),
-                          selectedForegroundColor: AppColors.darkTeal,
-                          foregroundColor: AppColors.slateBlue,
-                          side: BorderSide(
-                            color:
-                                AppColors.slateBlue.withValues(alpha: 0.3),
-                          ),
-                        ),
-                        onSelectionChanged: (selection) {
+                      _LokasiPembelianSelector(
+                        value: _lokasiPembelian,
+                        onChanged: (value) {
                           setState(() {
-                            _lokasiPembelian = selection.first;
+                            _lokasiPembelian = value;
                           });
                         },
                       ),
@@ -637,27 +580,15 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                           Expanded(
                             child: TextFormField(
                               controller: _literController,
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                decimal: true,
-                              ),
-                              inputFormatters: [
-                                FilteringTextInputFormatter.allow(
-                                  RegExp(r'[0-9.,]'),
-                                ),
-                              ],
+                              readOnly: true,
                               decoration: const InputDecoration(
-                                labelText: 'Liter',
+                                labelText: 'Liter (otomatis)',
                                 hintText: '0,000',
+                                suffixIcon: Icon(
+                                  Icons.lock_outline_rounded,
+                                  size: 18,
+                                ),
                               ),
-                              onChanged: (_) {
-                                if (_syncing) {
-                                  return;
-                                }
-                                _lastEdited = 'liter';
-                                _syncFromLastEdited();
-                                setState(() {});
-                              },
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -673,11 +604,7 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                                 hintText: '0',
                               ),
                               onChanged: (_) {
-                                if (_syncing) {
-                                  return;
-                                }
-                                _lastEdited = 'total';
-                                _syncFromLastEdited();
+                                _resyncTotal();
                                 setState(() {});
                               },
                             ),
@@ -971,6 +898,131 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _LokasiPembelianSelector extends StatelessWidget {
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  const _LokasiPembelianSelector({
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _LokasiPembelianOption(
+            label: 'Paiton',
+            icon: Icons.location_on_outlined,
+            selected: value == 'paiton',
+            onTap: () => onChanged('paiton'),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _LokasiPembelianOption(
+            label: 'Luar Paiton',
+            icon: Icons.place_outlined,
+            selected: value == 'luar_paiton',
+            onTap: () => onChanged('luar_paiton'),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LokasiPembelianOption extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _LokasiPembelianOption({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = selected ? Colors.white : AppColors.slateBlue;
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            decoration: BoxDecoration(
+              color: selected
+                  ? AppColors.primary
+                  : AppColors.slateBlue.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+              border: Border.all(
+                color: selected
+                    ? AppColors.primary
+                    : AppColors.slateBlue.withValues(alpha: 0.3),
+                width: selected ? 2 : 1,
+              ),
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.25),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 18, color: foreground),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    label,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight:
+                          selected ? FontWeight.w800 : FontWeight.w600,
+                      color: foreground,
+                      decoration: selected
+                          ? TextDecoration.none
+                          : TextDecoration.lineThrough,
+                      decorationColor: AppColors.slateBlue,
+                      decorationThickness: 1.5,
+                    ),
+                  ),
+                ),
+                if (selected) ...[
+                  const SizedBox(width: 6),
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
