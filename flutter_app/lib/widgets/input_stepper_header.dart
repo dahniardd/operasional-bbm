@@ -1,10 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../config/app_colors.dart';
+import '../config/pln_colors.dart';
+import '../screens/main/profile_screen.dart';
 
+TextStyle _poppins(double size, FontWeight w, Color c, {double? ls}) =>
+    GoogleFonts.poppins(
+      fontSize: size,
+      fontWeight: w,
+      color: c,
+      letterSpacing: ls,
+    );
+
+/// Header halaman input (gaya sama dengan header Riwayat Pengisian).
 class InputStepperHeader extends StatelessWidget {
   final String title;
+
+  /// Teks kecil di bawah judul (opsional).
+  final String? subtitle;
+
   final List<String> steps;
   final int currentStep;
   final VoidCallback? onBack;
@@ -14,80 +29,134 @@ class InputStepperHeader extends StatelessWidget {
     required this.title,
     required this.steps,
     required this.currentStep,
+    this.subtitle,
     this.onBack,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 1),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [PlnColors.primaryBlue, PlnColors.darkNavy],
           ),
-        ],
-      ),
-      padding: EdgeInsets.fromLTRB(
-        16,
-        MediaQuery.of(context).padding.top + 12,
-        16,
-        16,
-      ),
-      child: Column(
-        children: [
-          Row(
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(24),
+            bottomRight: Radius.circular(24),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: PlnColors.primaryBlue.withValues(alpha: 0.2),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(24),
+            bottomRight: Radius.circular(24),
+          ),
+          child: Stack(
             children: [
-              _BackButton(
-                onTap: onBack ?? () => Navigator.of(context).maybePop(),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(5),
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                      child: const Icon(
-                        Icons.bolt_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
+              // Hiasan lingkaran
+              Positioned(
+                right: -24,
+                top: -28,
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.05),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.4,
-                  color: AppColors.navy,
+              Positioned(
+                left: -40,
+                bottom: -60,
+                child: Container(
+                  width: 150,
+                  height: 150,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: PlnColors.accentYellow.withValues(alpha: 0.06),
+                  ),
                 ),
               ),
-              const Spacer(),
+              SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
+                  child: Column(
+                    children: [
+                      // Satu baris: back + judul ... profil (kanan)
+                      Row(
+                        children: [
+                          _HeaderButton(
+                            icon: Icons.arrow_back_rounded,
+                            tooltip: 'Kembali',
+                            onTap: onBack ??
+                                () => Navigator.of(context).maybePop(),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: _poppins(
+                                      18, FontWeight.w700, Colors.white,
+                                      ls: -0.4),
+                                ),
+                                if (subtitle != null &&
+                                    subtitle!.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    subtitle!,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: _poppins(
+                                        11,
+                                        FontWeight.w400,
+                                        Colors.white.withValues(alpha: 0.7)),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          _HeaderButton(
+                            icon: Icons.person_outline_rounded,
+                            tooltip: 'Profil',
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const ProfileScreen(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      if (steps.isNotEmpty) ...[
+                        const SizedBox(height: 20),
+                        _buildStepper(),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
-          if (steps.isNotEmpty) ...[
-            const SizedBox(height: 20),
-            _buildStepper(),
-          ],
-        ],
+        ),
       ),
     );
   }
@@ -102,9 +171,12 @@ class InputStepperHeader extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.only(bottom: 22),
               child: isDone
-                  ? Container(height: 2, color: AppColors.primary)
+                  ? Container(
+                      height: 2,
+                      color: Colors.white.withValues(alpha: 0.9),
+                    )
                   : _DashedLine(
-                      color: AppColors.slateBlue.withValues(alpha: 0.3),
+                      color: Colors.white.withValues(alpha: 0.35),
                     ),
             ),
           );
@@ -121,29 +193,32 @@ class InputStepperHeader extends StatelessWidget {
               height: 26,
               decoration: BoxDecoration(
                 color: isCompleted
-                    ? AppColors.darkTeal
-                    : (isActive ? AppColors.navy : Colors.white),
+                    ? Colors.white
+                    : (isActive
+                        ? PlnColors.accentYellow
+                        : Colors.white.withValues(alpha: 0.12)),
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: isCompleted
-                      ? AppColors.darkTeal
+                      ? Colors.white
                       : (isActive
-                          ? AppColors.navy
-                          : AppColors.slateBlue.withValues(alpha: 0.35)),
+                          ? PlnColors.accentYellow
+                          : Colors.white.withValues(alpha: 0.35)),
                   width: 1.4,
                 ),
               ),
               child: Center(
                 child: isCompleted
-                    ? const Icon(Icons.check, size: 14, color: Colors.white)
+                    ? Icon(Icons.check,
+                        size: 14, color: PlnColors.primaryBlue)
                     : Text(
                         '${stepIdx + 1}',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: isActive
-                              ? Colors.white
-                              : AppColors.slateBlue.withValues(alpha: 0.7),
+                        style: _poppins(
+                          12,
+                          FontWeight.w700,
+                          isActive
+                              ? PlnColors.darkNavy
+                              : Colors.white.withValues(alpha: 0.7),
                         ),
                       ),
               ),
@@ -151,13 +226,12 @@ class InputStepperHeader extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               steps[stepIdx],
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                fontWeight:
-                    isActive || isCompleted ? FontWeight.w700 : FontWeight.w400,
-                color: isActive || isCompleted
-                    ? AppColors.navy
-                    : AppColors.slateBlue.withValues(alpha: 0.7),
+              style: _poppins(
+                11,
+                isActive || isCompleted ? FontWeight.w600 : FontWeight.w400,
+                isActive || isCompleted
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: 0.65),
               ),
             ),
           ],
@@ -167,26 +241,43 @@ class InputStepperHeader extends StatelessWidget {
   }
 }
 
-class _BackButton extends StatelessWidget {
-  final VoidCallback onTap;
+/// Tombol kotak transparan di header (dipakai untuk back dan profil).
+class _HeaderButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onTap;
 
-  const _BackButton({required this.onTap});
+  const _HeaderButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.navy.withValues(alpha: 0.06),
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: const SizedBox(
-          width: 34,
-          height: 34,
-          child: Icon(
-            Icons.arrow_back_rounded,
-            color: AppColors.navy,
-            size: 18,
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(9),
+          child: Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(9),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.18),
+                width: 1,
+              ),
+            ),
+            child: Icon(
+              icon,
+              color: Colors.white.withValues(alpha: 0.9),
+              size: 18,
+            ),
           ),
         ),
       ),
