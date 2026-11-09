@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/app_colors.dart';
+import '../../config/pln_colors.dart';
 import '../../config/theme.dart';
 import '../../models/pemakaian_bbm.dart';
 import '../../providers/harga_bbm_provider.dart';
@@ -342,69 +343,142 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
   }
 
   void _showSuccessDialog() {
-    showDialog(
+    final hijauGelap = Color.lerp(PlnColors.success, Colors.black, 0.28)!;
+
+    showGeneralDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        ),
-        contentPadding: const EdgeInsets.all(28),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: AppTheme.success.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check_circle_rounded,
-                color: AppTheme.success,
-                size: 40,
-              ),
+      barrierLabel: 'Berhasil',
+      barrierColor: Colors.black.withValues(alpha: 0.5),
+      transitionDuration: const Duration(milliseconds: 240),
+      pageBuilder: (dialogContext, _, __) => Center(
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 28),
+            constraints: const BoxConstraints(maxWidth: 340),
+            padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
+            decoration: BoxDecoration(
+              color: PlnColors.surface,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 30,
+                  offset: const Offset(0, 12),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Berhasil!',
-              style: GoogleFonts.inter(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Pemakaian BBM berhasil disimpan.',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: AppTheme.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 46,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.of(dialogContext).pop();
-                  Navigator.of(context).pop(true);
-                },
-                child: Text(
-                  'Kembali ke Dashboard',
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w600,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Satu ikon centang bergradien hijau
+                Container(
+                  width: 66,
+                  height: 66,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [PlnColors.success, hijauGelap],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: PlnColors.success.withValues(alpha: 0.32),
+                        blurRadius: 16,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.check_rounded,
+                    size: 38,
                     color: Colors.white,
                   ),
                 ),
-              ),
+                const SizedBox(height: 20),
+                Text(
+                  'Berhasil!',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
+                    color: PlnColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Pemakaian BBM berhasil disimpan.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    color: PlnColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 26),
+                // Tombol bergradien biru (sama dengan tab aktif di Riwayat)
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.of(dialogContext).pop();
+                      Navigator.of(context).pop(true);
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Ink(
+                      width: double.infinity,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [PlnColors.primaryBlue, PlnColors.darkNavy],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color:
+                                PlnColors.primaryBlue.withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Kembali ke Dashboard',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
+      transitionBuilder: (context, anim, _, child) {
+        final curved = CurvedAnimation(
+          parent: anim,
+          curve: Curves.easeOutBack,
+          reverseCurve: Curves.easeIn,
+        );
+        return FadeTransition(
+          opacity: anim,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.9, end: 1.0).animate(curved),
+            child: child,
+          ),
+        );
+      },
     );
   }
 
