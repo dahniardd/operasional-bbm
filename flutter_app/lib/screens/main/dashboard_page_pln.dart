@@ -12,7 +12,10 @@ import '../input_bbm/input_bbm_screen.dart';
 import 'history_page.dart';
 
 class DashboardPagePln extends StatefulWidget {
-  const DashboardPagePln({super.key});
+  /// Naikkan nilainya untuk memuat ulang dashboard (opsional, dari MainShell).
+  final int refreshTick;
+
+  const DashboardPagePln({super.key, this.refreshTick = 0});
 
   @override
   State<DashboardPagePln> createState() => _DashboardPagePlnState();
@@ -24,6 +27,8 @@ class _DashboardPagePlnState extends State<DashboardPagePln>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
+  /// Hanya untuk pemuatan awal. Angka dan daftar dihitung ulang dari provider
+  /// setiap build() sehingga ikut berubah saat data baru masuk.
   bool _isLoading = true;
   Map<String, dynamic> _stats = {};
   PemakaianBbm? _lastTransaction;
@@ -37,6 +42,14 @@ class _DashboardPagePlnState extends State<DashboardPagePln>
     super.initState();
     _setupAnimations();
     _loadDashboardData();
+  }
+
+  @override
+  void didUpdateWidget(covariant DashboardPagePln oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.refreshTick != widget.refreshTick) {
+      _loadDashboardData(silent: true);
+    }
   }
 
   void _setupAnimations() {
@@ -64,69 +77,49 @@ class _DashboardPagePlnState extends State<DashboardPagePln>
     _animationController.forward();
   }
 
-  Future<void> _loadDashboardData() async {
-    setState(() => _isLoading = true);
+  /// [silent] = true: muat ulang tanpa spinner layar penuh.
+  Future<void> _loadDashboardData({bool silent = false}) async {
+    if (!silent && !_isLoading) setState(() => _isLoading = true);
 
-    try {
-      final provider = context.read<PemakaianBbmProvider>();
-      await provider.loadPemakaian(reset: true);
+    final provider = context.read<PemakaianBbmProvider>();
+    await provider.loadPemakaian(reset: true);
 
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final thisWeek = today.subtract(Duration(days: today.weekday - 1));
-      final thisMonth = DateTime(now.year, now.month);
-      final thisYear = DateTime(now.year);
+    if (!mounted) return;
+    setState(() => _isLoading = false);
 
-      final allData = provider.items;
-
-      // Get statistics untuk berbagai periode
-      final todayData = allData.where((item) {
-        final date = DateTime(item.tanggal.year, item.tanggal.month, item.tanggal.day);
-        return date == today;
-      }).toList();
-
-      final monthData = allData.where((item) {
-        return item.tanggal.year == thisMonth.year && 
-               item.tanggal.month == thisMonth.month;
-      }).toList();
-
-      // Calculate stats
-      final todayTotal = todayData.fold<double>(0, (sum, item) => sum + item.jumlah);
-      final todayLiter = todayData.fold<double>(0, (sum, item) => sum + item.liter);
-      final todayCount = todayData.length;
-
-      final monthTotal = monthData.fold<double>(0, (sum, item) => sum + item.jumlah);
-      final monthLiter = monthData.fold<double>(0, (sum, item) => sum + item.liter);
-      final monthCount = monthData.length;
-
-      if (mounted) {
-        setState(() {
-          _stats = {
-            'todayTotal': todayTotal,
-            'todayLiter': todayLiter,
-            'todayCount': todayCount,
-            'monthTotal': monthTotal,
-            'monthLiter': monthLiter,
-            'monthCount': monthCount,
-            'totalVehicles': allData.map((e) => e.kendaraanId).toSet().length,
-          };
-          _lastTransaction = allData.isNotEmpty ? allData.first : null;
-          _recentActivities = allData.take(5).toList();
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal memuat data: $e'),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: PlnColors.danger,
-          ),
-        );
-      }
+    final error = provider.error;
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memuat data: $error'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: PlnColors.danger,
+        ),
+      );
     }
+  }
+
+  /// Hitung statistik dan daftar terbaru dari data provider.
+  void _syncFromProvider(List<PemakaianBbm> allData) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final todayData = allData.where((item) {
+      final date =
+          DateTime(item.tanggal.year, item.tanggal.month, item.tanggal.day);
+      return date == today;
+    }).toList();
+
+    _stats = {
+      'todayTotal':
+          todayData.fold<double>(0, (sum, item) => sum + item.jumlah),
+      'todayLiter':
+          todayData.fold<double>(0, (sum, item) => sum + item.liter),
+      'todayCount': todayData.length,
+      'totalVehicles': allData.map((e) => e.kendaraanId).toSet().length,
+    };
+    _lastTransaction = allData.isNotEmpty ? allData.first : null;
+    _recentActivities = allData.take(5).toList();
   }
 
   @override
@@ -139,9 +132,10 @@ class _DashboardPagePlnState extends State<DashboardPagePln>
   Widget build(BuildContext context) {
     super.build(context);
     final user = context.watch<AuthProvider>().user;
+    _syncFromProvider(context.watch<PemakaianBbmProvider>().items);
 
     return RefreshIndicator(
-      onRefresh: _loadDashboardData,
+      onRefresh: () => _loadDashboardData(silent: true),
       color: PlnColors.primaryBlue,
       backgroundColor: Colors.white,
       child: Container(
@@ -454,7 +448,7 @@ class _DashboardPagePlnState extends State<DashboardPagePln>
                     MaterialPageRoute(
                       builder: (_) => const InputBbmScreen(),
                     ),
-                  ).then((_) => _loadDashboardData());
+                  ).then((_) => _loadDashboardData(silent: true));
                 },
               ),
               _buildQuickActionTile(
@@ -468,7 +462,7 @@ class _DashboardPagePlnState extends State<DashboardPagePln>
                     MaterialPageRoute(
                       builder: (_) => const HistoryPage(),
                     ),
-                  ).then((_) => _loadDashboardData());
+                  ).then((_) => _loadDashboardData(silent: true));
                 },
               ),
               _buildQuickActionTile(

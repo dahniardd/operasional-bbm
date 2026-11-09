@@ -20,7 +20,14 @@ class DashboardPageAdvanced extends StatefulWidget {
   /// Dipanggil saat user ingin membuka tab Riwayat (diatur oleh MainShell).
   final VoidCallback? onOpenHistory;
 
-  const DashboardPageAdvanced({super.key, this.onOpenHistory});
+  /// Naikkan nilainya untuk memuat ulang dashboard (opsional, dari MainShell).
+  final int refreshTick;
+
+  const DashboardPageAdvanced({
+    super.key,
+    this.onOpenHistory,
+    this.refreshTick = 0,
+  });
 
   @override
   State<DashboardPageAdvanced> createState() => _DashboardPageAdvancedState();
@@ -31,9 +38,9 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
+  /// Hanya untuk pemuatan awal. Setelah itu, angka dan daftar dihitung
+  /// langsung dari provider di build() sehingga ikut berubah otomatis.
   bool _isLoading = true;
-  Map<String, dynamic> _stats = {};
-  List<PemakaianBbm> _recentTransactions = [];
 
   @override
   bool get wantKeepAlive => true;
@@ -43,6 +50,14 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
     super.initState();
     _setupAnimations();
     _loadDashboardData();
+  }
+
+  @override
+  void didUpdateWidget(covariant DashboardPageAdvanced oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.refreshTick != widget.refreshTick) {
+      _loadDashboardData(silent: true);
+    }
   }
 
   void _setupAnimations() {
@@ -58,106 +73,79 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
     _animationController.forward();
   }
 
-  Future<void> _loadDashboardData() async {
-    setState(() => _isLoading = true);
+  /// [silent] = true: muat ulang tanpa spinner layar penuh.
+  Future<void> _loadDashboardData({bool silent = false}) async {
+    if (!silent && !_isLoading) setState(() => _isLoading = true);
 
-    try {
-      final provider = context.read<PemakaianBbmProvider>();
-      await provider.loadPemakaian(reset: true);
+    final provider = context.read<PemakaianBbmProvider>();
+    await provider.loadPemakaian(reset: true);
 
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final thisMonth = DateTime(now.year, now.month);
-      final lastMonth = now.month == 1
-          ? DateTime(now.year - 1, 12)
-          : DateTime(now.year, now.month - 1);
+    if (!mounted) return;
+    setState(() => _isLoading = false);
 
-      final allData = provider.items;
-
-      // Today statistics
-      final todayData = allData.where((item) {
-        final itemDate = DateTime(
-          item.tanggal.year,
-          item.tanggal.month,
-          item.tanggal.day,
-        );
-        return itemDate == today;
-      }).toList();
-
-      final todayTotal = todayData.fold<double>(
-        0,
-        (sum, item) => sum + item.jumlah,
+    final error = provider.error;
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memuat data: $error'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: PlnColors.danger,
+          margin: const EdgeInsets.all(16),
+        ),
       );
-      final todayLiter = todayData.fold<double>(
-        0,
-        (sum, item) => sum + item.liter,
-      );
-
-      // Month statistics
-      final monthData = allData
-          .where(
-            (item) =>
-                item.tanggal.year == thisMonth.year &&
-                item.tanggal.month == thisMonth.month,
-          )
-          .toList();
-
-      final monthTotal = monthData.fold<double>(
-        0,
-        (sum, item) => sum + item.jumlah,
-      );
-      final monthLiter = monthData.fold<double>(
-        0,
-        (sum, item) => sum + item.liter,
-      );
-
-      // Last month for comparison
-      final lastMonthData = allData
-          .where(
-            (item) =>
-                item.tanggal.year == lastMonth.year &&
-                item.tanggal.month == lastMonth.month,
-          )
-          .toList();
-
-      final lastMonthTotal = lastMonthData.fold<double>(
-        0,
-        (sum, item) => sum + item.jumlah,
-      );
-
-      final percentageChange = lastMonthTotal > 0
-          ? ((monthTotal - lastMonthTotal) / lastMonthTotal) * 100
-          : 0.0;
-
-      if (mounted) {
-        setState(() {
-          _stats = {
-            'todayTotal': todayTotal,
-            'todayLiter': todayLiter,
-            'todayCount': todayData.length,
-            'monthTotal': monthTotal,
-            'monthLiter': monthLiter,
-            'monthCount': monthData.length,
-            'percentageChange': percentageChange,
-            'totalVehicles': allData.map((e) => e.kendaraanId).toSet().length,
-          };
-          _recentTransactions = allData.take(6).toList();
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal memuat data: $e'),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: PlnColors.danger,
-            margin: const EdgeInsets.all(16),
-          ),
-        );
-      }
     }
+  }
+
+  /// Statistik dihitung dari data provider setiap build.
+  Map<String, dynamic> _computeStats(List<PemakaianBbm> allData) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final thisMonth = DateTime(now.year, now.month);
+    final lastMonth = now.month == 1
+        ? DateTime(now.year - 1, 12)
+        : DateTime(now.year, now.month - 1);
+
+    final todayData = allData.where((item) {
+      final itemDate = DateTime(
+        item.tanggal.year,
+        item.tanggal.month,
+        item.tanggal.day,
+      );
+      return itemDate == today;
+    }).toList();
+
+    final monthData = allData
+        .where((item) =>
+            item.tanggal.year == thisMonth.year &&
+            item.tanggal.month == thisMonth.month)
+        .toList();
+
+    final lastMonthData = allData
+        .where((item) =>
+            item.tanggal.year == lastMonth.year &&
+            item.tanggal.month == lastMonth.month)
+        .toList();
+
+    double sumJumlah(List<PemakaianBbm> l) =>
+        l.fold<double>(0, (sum, item) => sum + item.jumlah);
+    double sumLiter(List<PemakaianBbm> l) =>
+        l.fold<double>(0, (sum, item) => sum + item.liter);
+
+    final monthTotal = sumJumlah(monthData);
+    final lastMonthTotal = sumJumlah(lastMonthData);
+
+    return {
+      'todayTotal': sumJumlah(todayData),
+      'todayLiter': sumLiter(todayData),
+      'todayCount': todayData.length,
+      'monthTotal': monthTotal,
+      'monthLiter': sumLiter(monthData),
+      'monthCount': monthData.length,
+      'percentageChange': lastMonthTotal > 0
+          ? ((monthTotal - lastMonthTotal) / lastMonthTotal) * 100
+          : 0.0,
+      'totalVehicles': allData.map((e) => e.kendaraanId).toSet().length,
+    };
   }
 
   @override
@@ -169,6 +157,10 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+
+    final items = context.watch<PemakaianBbmProvider>().items;
+    final stats = _computeStats(items);
+    final recent = items.take(6).toList();
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -188,7 +180,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                   : FadeTransition(
                       opacity: _fadeAnimation,
                       child: RefreshIndicator(
-                        onRefresh: _loadDashboardData,
+                        onRefresh: () => _loadDashboardData(silent: true),
                         color: PlnColors.primaryBlue,
                         backgroundColor: Colors.white,
                         child: MediaQuery.removePadding(
@@ -204,7 +196,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                                   children: [
                                     const SizedBox(height: 12),
                                     // Stats Section
-                                    _buildStatsSection(),
+                                    _buildStatsSection(stats),
                                     const SizedBox(height: 16),
                                     // Quick Actions Section
                                     _buildQuickActionsSection(),
@@ -213,7 +205,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                                     _buildChartSection(),
                                     const SizedBox(height: 16),
                                     // Recent Transactions Section
-                                    _buildRecentTransactionsSection(),
+                                    _buildRecentTransactionsSection(recent),
                                     // Ruang bawah agar tidak tertutup bottom nav.
                                     const SizedBox(height: 120),
                                   ],
@@ -273,7 +265,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
     );
   }
 
-  Widget _buildStatsSection() {
+  Widget _buildStatsSection(Map<String, dynamic> stats) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -356,7 +348,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                   locale: 'id_ID',
                   symbol: 'Rp ',
                   decimalDigits: 0,
-                ).format(_stats['todayTotal'] ?? 0),
+                ).format(stats['todayTotal'] ?? 0),
                 icon: Icons.attach_money,
                 primaryColor: PlnColors.primaryBlue,
                 backgroundColor: const Color(0xFFE8F4FF),
@@ -364,7 +356,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
               AdvancedStatCard(
                 label: 'Total Liter',
                 value:
-                    '${(_stats['todayLiter'] as double? ?? 0).toStringAsFixed(1)} L',
+                    '${(stats['todayLiter'] as double? ?? 0).toStringAsFixed(1)} L',
                 icon: Icons.local_gas_station,
                 primaryColor: PlnColors.success,
                 backgroundColor: const Color(0xFFE8F9F5),
@@ -375,17 +367,17 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                   locale: 'id_ID',
                   symbol: 'Rp ',
                   decimalDigits: 0,
-                ).format(_stats['monthTotal'] ?? 0),
-                subtitle: '${(_stats['monthCount'] ?? 0)} transaksi',
+                ).format(stats['monthTotal'] ?? 0),
+                subtitle: '${(stats['monthCount'] ?? 0)} transaksi',
                 icon: Icons.receipt_long,
                 primaryColor: PlnColors.accentYellow,
                 backgroundColor: const Color(0xFFFEF3E2),
-                change: _stats['percentageChange'] as double?,
-                isPositive: (_stats['percentageChange'] as double? ?? 0) >= 0,
+                change: stats['percentageChange'] as double?,
+                isPositive: (stats['percentageChange'] as double? ?? 0) >= 0,
               ),
               AdvancedStatCard(
                 label: 'Kendaraan Aktif',
-                value: '${_stats['totalVehicles'] ?? 0} Unit',
+                value: '${stats['totalVehicles'] ?? 0} Unit',
                 subtitle: 'tersedia',
                 icon: Icons.directions_car,
                 primaryColor: PlnColors.primaryBlue,
@@ -434,7 +426,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const InputBbmScreen()),
-                  ).then((_) => _loadDashboardData());
+                  ).then((_) => _loadDashboardData(silent: true));
                 },
               ),
               AdvancedQuickAction(
@@ -461,7 +453,8 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
     );
   }
 
-  Widget _buildRecentTransactionsSection() {
+  Widget _buildRecentTransactionsSection(
+      List<PemakaianBbm> recentTransactions) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -484,7 +477,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${_recentTransactions.length} transaksi terakhir',
+                    '${recentTransactions.length} transaksi terakhir',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       fontWeight: FontWeight.w400,
@@ -493,7 +486,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                   ),
                 ],
               ),
-              if (_recentTransactions.isNotEmpty)
+              if (recentTransactions.isNotEmpty)
                 Material(
                   color: Colors.transparent,
                   child: InkWell(
@@ -515,7 +508,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
             ],
           ),
           const SizedBox(height: 10),
-          if (_recentTransactions.isEmpty)
+          if (recentTransactions.isEmpty)
             Container(
               padding: const EdgeInsets.all(40),
               decoration: BoxDecoration(
@@ -551,10 +544,10 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
               padding: EdgeInsets.zero,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: _recentTransactions.length,
+              itemCount: recentTransactions.length,
               separatorBuilder: (_, _) => const SizedBox(height: 10),
               itemBuilder: (context, index) {
-                final tx = _recentTransactions[index];
+                final tx = recentTransactions[index];
                 return AdvancedTransactionCard(pemakaian: tx);
               },
             ),
