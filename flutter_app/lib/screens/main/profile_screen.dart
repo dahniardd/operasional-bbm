@@ -102,7 +102,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _loading = true;
   bool _loggingOut = false;
   String? _error;
-
   // Ringkasan aktivitas (opsional; kalau gagal dimuat, bagian ini disembunyikan)
   int? _totalTransaksi;
   double _totalLiter = 0;
@@ -163,27 +162,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _keluar() async {
-    final ya = await showDialog<bool>(
+    final ya = await showGeneralDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Keluar dari akun?',
-            style: _poppins(16, FontWeight.w700, PlnColors.textPrimary)),
-        content: Text(
-          'Anda perlu login lagi untuk memakai aplikasi.',
-          style: _poppins(13, FontWeight.w400, PlnColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
+      barrierDismissible: true,
+      barrierLabel: 'Tutup',
+      barrierColor: Colors.black.withValues(alpha: 0.5),
+      transitionDuration: const Duration(milliseconds: 240),
+      pageBuilder: (_, __, ___) =>
+          _KonfirmasiKeluar(nama: (_user?['username'] ?? '').toString()),
+      transitionBuilder: (context, anim, _, child) {
+        final curved = CurvedAnimation(
+          parent: anim,
+          curve: Curves.easeOutBack,
+          reverseCurve: Curves.easeIn,
+        );
+        return FadeTransition(
+          opacity: anim,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.9, end: 1.0).animate(curved),
+            child: child,
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child:
-                const Text('Keluar', style: TextStyle(color: PlnColors.danger)),
-          ),
-        ],
-      ),
+        );
+      },
     );
     if (ya != true) return;
 
@@ -591,6 +591,155 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                   ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// Dialog konfirmasi keluar (sederhana, aksen gradien)
+// ============================================================
+
+class _KonfirmasiKeluar extends StatelessWidget {
+  final String nama;
+  const _KonfirmasiKeluar({required this.nama});
+
+  @override
+  Widget build(BuildContext context) {
+    final merahGelap = Color.lerp(PlnColors.danger, Colors.black, 0.3)!;
+
+    return Center(
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 28),
+          constraints: const BoxConstraints(maxWidth: 340),
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
+          decoration: BoxDecoration(
+            color: PlnColors.surface,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 30,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Satu ikon bergradien
+              Container(
+                width: 66,
+                height: 66,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [PlnColors.danger, merahGelap],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: PlnColors.danger.withValues(alpha: 0.32),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.logout_rounded,
+                    size: 32, color: Colors.white),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Keluar dari akun?',
+                textAlign: TextAlign.center,
+                style: _poppins(20, FontWeight.w700, PlnColors.textPrimary,
+                    ls: -0.3),
+              ),
+              const SizedBox(height: 8),
+              Text.rich(
+                TextSpan(
+                  style: _poppins(
+                      13, FontWeight.w400, PlnColors.textSecondary),
+                  children: [
+                    if (nama.isNotEmpty) ...[
+                      const TextSpan(text: 'Akun '),
+                      TextSpan(
+                        text: nama,
+                        style: _poppins(
+                            13, FontWeight.w700, PlnColors.textPrimary),
+                      ),
+                      const TextSpan(text: ' akan keluar dari perangkat ini. '),
+                    ],
+                    const TextSpan(
+                        text: 'Anda perlu login lagi untuk memakai aplikasi.'),
+                  ],
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 26),
+              Row(
+                children: [
+                  // Batal: abu-abu lembut
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: PlnColors.background,
+                        foregroundColor: PlnColors.textSecondary,
+                        elevation: 0,
+                        minimumSize: const Size.fromHeight(50),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: Text('Batal',
+                          style: _poppins(
+                              14, FontWeight.w600, PlnColors.textSecondary)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Ya, Keluar: gradien merah
+                  Expanded(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => Navigator.pop(context, true),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Ink(
+                          height: 50,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [PlnColors.danger, merahGelap],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color:
+                                    PlnColors.danger.withValues(alpha: 0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text('Ya, Keluar',
+                                style: _poppins(
+                                    14, FontWeight.w600, Colors.white)),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
