@@ -17,7 +17,6 @@ class _C {
   static const error = Color(0xFFDC2626);
   static const slate300 = Color(0xFFCBD5E1);
   static const slate400 = Color(0xFF94A3B8);
-  static const slate600 = Color(0xFF475569);
 }
 
 class LoginScreen extends StatefulWidget {
@@ -37,7 +36,14 @@ class _LoginScreenState extends State<LoginScreen>
   late final AnimationController _kenBurns;
 
   bool _obscurePassword = true;
-  bool _remember = true;
+
+  // Foto background hero
+  static const String _heroImage = 'assets/images/login3.jpg';
+
+  // Bagian foto yang ditampilkan. Foto ini portrait, jadi area hero hanya
+  // menampilkan sebagian. y = -1 (paling atas), 0 (tengah), 1 (paling bawah).
+  // Jangan di luar rentang -1 sampai 1.
+  static const Alignment _imageAlignment = Alignment(0, -1);
 
   // Lengkungan sudut kiri atas kartu & seberapa jauh kartu menimpa foto
   static const double _cardRadius = 80;
@@ -45,10 +51,10 @@ class _LoginScreenState extends State<LoginScreen>
 
   // Menurunkan seluruh kartu (termasuk lengkung sudutnya).
   // Makin besar = kartu makin turun. Negatif = kartu naik.
-  static const double _cardDrop = 16;
+  static const double _cardDrop = 52;
 
-  // Tinggi foto sebagai pecahan tinggi layar. Makin kecil = foto makin
-  // "zoom out" (kurang terpotong kiri-kanan).
+  // Dasar tinggi foto sebagai pecahan tinggi layar. Foto lalu dipanjangkan
+  // sampai ke belakang kartu, jadi lengkungan kartu tidak menampakkan putih.
   static const double _heroFraction = 0.34;
 
   // Zoom foto: mulai dari skala dasar, membesar sejauh _zoomRange.
@@ -106,35 +112,13 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  void _showForgotPassword() {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: _C.navy,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          content: Text(
-            'Lupa password? Silakan hubungi Helpdesk Administrator Unit Operasional.',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
-        ),
-      );
-  }
-
   InputDecoration _inputDecoration({
     required String label,
     required String hint,
     required IconData icon,
     Widget? suffix,
   }) {
-    UnderlineInputBorder line(Color color, [double width = 1.2]) {
+    UnderlineInputBorder line(Color color, [double width = 1.4]) {
       return UnderlineInputBorder(
         borderSide: BorderSide(color: color, width: width),
       );
@@ -144,36 +128,36 @@ class _LoginScreenState extends State<LoginScreen>
       labelText: label,
       hintText: hint,
       labelStyle: GoogleFonts.plusJakartaSans(
-        fontSize: 13,
+        fontSize: 16,
         fontWeight: FontWeight.w600,
         color: _C.slate400,
       ),
       floatingLabelStyle: GoogleFonts.plusJakartaSans(
-        fontSize: 13,
+        fontSize: 16,
         fontWeight: FontWeight.w700,
         color: _C.primary,
       ),
       hintStyle: GoogleFonts.plusJakartaSans(
-        fontSize: 13,
+        fontSize: 16,
         fontWeight: FontWeight.w500,
         color: _C.slate400,
       ),
       floatingLabelBehavior: FloatingLabelBehavior.auto,
-      prefixIcon: Icon(icon, size: 20),
+      prefixIcon: Icon(icon, size: 26),
       prefixIconColor: WidgetStateColor.resolveWith(
         (states) => states.contains(WidgetState.focused)
             ? _C.primary
             : _C.slate400,
       ),
       suffixIcon: suffix,
-      contentPadding: const EdgeInsets.symmetric(vertical: 14),
+      contentPadding: const EdgeInsets.symmetric(vertical: 20),
       enabledBorder: line(_C.slate300),
       border: line(_C.slate300),
-      focusedBorder: line(_C.primaryContainer, 2),
+      focusedBorder: line(_C.primaryContainer, 2.4),
       errorBorder: line(_C.error),
-      focusedErrorBorder: line(_C.error, 2),
+      focusedErrorBorder: line(_C.error, 2.4),
       errorStyle: GoogleFonts.plusJakartaSans(
-        fontSize: 11,
+        fontSize: 13,
         fontWeight: FontWeight.w600,
         color: _C.error,
       ),
@@ -234,14 +218,17 @@ class _LoginScreenState extends State<LoginScreen>
               builder: (context, child) {
                 return Transform.scale(
                   scale: _baseScale + (_zoomRange * _kenBurns.value),
+                  alignment: _imageAlignment,
                   child: child,
                 );
               },
               child: Image.asset(
-                'assets/images/login1.jpg',
+                _heroImage,
                 fit: BoxFit.cover,
+                alignment: _imageAlignment,
                 width: double.infinity,
                 height: double.infinity,
+                cacheWidth: 1200,
                 errorBuilder: (_, __, ___) => Container(
                   decoration: const BoxDecoration(
                     gradient: RadialGradient(
@@ -295,22 +282,22 @@ class _LoginScreenState extends State<LoginScreen>
             borderRadius: BorderRadius.circular(999),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         Text(
           'Selamat Datang',
           textAlign: TextAlign.center,
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 22,
+            fontSize: 28,
             fontWeight: FontWeight.w800,
             color: _C.navy,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         Text(
           'Masukkan username dan password Anda untuk melanjutkan.',
           textAlign: TextAlign.center,
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 10,
+            fontSize: 13,
             height: 1.5,
             color: _C.secondary,
           ),
@@ -322,50 +309,47 @@ class _LoginScreenState extends State<LoginScreen>
   Widget _buildSubmitButton(AuthProvider auth) {
     final disabled = auth.isLoading;
 
-    return Center(
-      child: Opacity(
-        opacity: disabled ? 0.85 : 1,
-        child: Container(
-          width: 190,
-          height: 50,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [_C.primary, _C.primaryContainer],
-            ),
-            borderRadius: BorderRadius.circular(999),
-            boxShadow: [
-              BoxShadow(
-                color: _C.primary.withValues(alpha: 0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
+    return Opacity(
+      opacity: disabled ? 0.85 : 1,
+      child: Container(
+        height: 60,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [_C.primary, _C.primaryContainer],
           ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(999),
-              onTap: disabled ? null : _submit,
-              child: Center(
-                child: disabled
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Text(
-                        'Masuk',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.6,
-                          color: Colors.white,
-                        ),
+          borderRadius: BorderRadius.circular(999),
+          boxShadow: [
+            BoxShadow(
+              color: _C.primary.withValues(alpha: 0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(999),
+            onTap: disabled ? null : _submit,
+            child: Center(
+              child: disabled
+                  ? const SizedBox(
+                      width: 26,
+                      height: 26,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.6,
+                        color: Colors.white,
                       ),
-              ),
+                    )
+                  : Text(
+                      'Masuk',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.6,
+                        color: Colors.white,
+                      ),
+                    ),
             ),
           ),
         ),
@@ -378,11 +362,14 @@ class _LoginScreenState extends State<LoginScreen>
     final auth = context.watch<AuthProvider>();
     final media = MediaQuery.of(context);
     final topPad = media.padding.top;
-    final heroHeight =
-        (media.size.height * _heroFraction).clamp(220.0, 360.0);
+    final baseHero = (media.size.height * _heroFraction).clamp(220.0, 360.0);
 
     // Posisi atas kartu: makin besar _cardDrop, makin turun
-    final cardTop = heroHeight - _overlap + _cardDrop;
+    final cardTop = baseHero - _overlap + _cardDrop;
+
+    // Foto dipanjangkan sampai ke belakang kartu, melewati lengkungannya,
+    // supaya sudut melengkung tidak menampakkan warna putih.
+    final photoHeight = cardTop + _cardRadius;
 
     // Kartu setinggi sisa layar (+ _extraScroll kalau mau ada ruang scroll)
     final cardMinHeight = media.size.height - cardTop + _extraScroll;
@@ -407,7 +394,7 @@ class _LoginScreenState extends State<LoginScreen>
                   child: child,
                 );
               },
-              child: _buildHero(heroHeight, topPad),
+              child: _buildHero(photoHeight, topPad),
             ),
           ),
 
@@ -460,7 +447,7 @@ class _LoginScreenState extends State<LoginScreen>
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             _buildHeading(),
-                            const SizedBox(height: 22),
+                            const SizedBox(height: 28),
 
                             // Username
                             TextFormField(
@@ -468,7 +455,7 @@ class _LoginScreenState extends State<LoginScreen>
                               textInputAction: TextInputAction.next,
                               autofillHints: const [AutofillHints.username],
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 14,
+                                fontSize: 18,
                                 fontWeight: FontWeight.w600,
                                 color: _C.navy,
                               ),
@@ -484,7 +471,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 18),
 
                             // Password
                             TextFormField(
@@ -494,7 +481,7 @@ class _LoginScreenState extends State<LoginScreen>
                               autofillHints: const [AutofillHints.password],
                               onFieldSubmitted: (_) => _submit(),
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 14,
+                                fontSize: 18,
                                 fontWeight: FontWeight.w600,
                                 color: _C.navy,
                               ),
@@ -512,7 +499,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     _obscurePassword
                                         ? Icons.visibility_outlined
                                         : Icons.visibility_off_outlined,
-                                    size: 20,
+                                    size: 26,
                                     color: _C.slate400,
                                   ),
                                 ),
@@ -524,80 +511,12 @@ class _LoginScreenState extends State<LoginScreen>
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 14),
-
-                            // Ingat perangkat + Lupa
-                            Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
-                              children: [
-                                InkWell(
-                                  borderRadius: BorderRadius.circular(8),
-                                  onTap: () =>
-                                      setState(() => _remember = !_remember),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 4,
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: Checkbox(
-                                            value: _remember,
-                                            activeColor: _C.primary,
-                                            side: const BorderSide(
-                                              color: _C.slate300,
-                                              width: 1.5,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                            onChanged: (v) => setState(
-                                              () => _remember = v ?? false,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'Ingat Perangkat Ini',
-                                          style: GoogleFonts.plusJakartaSans(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: _C.slate600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: _showForgotPassword,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 4,
-                                    ),
-                                    child: Text(
-                                      'Lupa?',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                        color: _C.primary,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
 
                             // Error dari AuthProvider
                             if (auth.error != null) ...[
-                              const SizedBox(height: 14),
+                              const SizedBox(height: 16),
                               Container(
-                                padding: const EdgeInsets.all(12),
+                                padding: const EdgeInsets.all(14),
                                 decoration: BoxDecoration(
                                   color: _C.error.withValues(alpha: 0.08),
                                   borderRadius: BorderRadius.circular(12),
@@ -610,7 +529,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     const Icon(
                                       Icons.error_outline,
                                       color: _C.error,
-                                      size: 20,
+                                      size: 24,
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
@@ -618,7 +537,7 @@ class _LoginScreenState extends State<LoginScreen>
                                         auth.error!,
                                         style: GoogleFonts.plusJakartaSans(
                                           color: _C.error,
-                                          fontSize: 12,
+                                          fontSize: 14,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -628,16 +547,17 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                             ],
 
-                            const SizedBox(height: 28),
+                            // Jarak password ke tombol Masuk
+                            const SizedBox(height: 34),
                             _buildSubmitButton(auth),
 
-                            // Footer: normal di bawah tombol, selalu tampil
-                            const SizedBox(height: 35),
+                            // Footer: di bawah tombol
+                            const SizedBox(height: 32),
                             Text(
                               'Aplikasi Resmi Operasional BBM © 2026 PT PLN Nusantara Power',
                               textAlign: TextAlign.center,
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 9.5,
+                                fontSize: 11,
                                 fontWeight: FontWeight.w600,
                                 color: _C.slate400,
                               ),
