@@ -816,40 +816,48 @@ class _PemakaianListState extends State<_PemakaianList>
           ),
           const SizedBox(height: 12),
           SizedBox(
-            height: 36,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: _filters.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (_, i) {
-                final (label, value) = _filters[i];
-                final aktif = _lokasi == value;
-                return GestureDetector(
-                  onTap: () {
-                    if (aktif) return;
-                    setState(() => _lokasi = value);
-                    _load();
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: aktif ? PlnColors.primaryBlue : PlnColors.surface,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color:
-                            aktif ? PlnColors.primaryBlue : PlnColors.border,
-                      ),
-                    ),
-                    child: Text(label,
-                        style: _poppins(
-                            12,
+            width: double.infinity,
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                for (final (label, value) in _filters)
+                  Builder(builder: (_) {
+                    final aktif = _lokasi == value;
+                    return GestureDetector(
+                      onTap: () {
+                        if (aktif) return;
+                        setState(() => _lokasi = value);
+                        _load();
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 22, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: aktif
+                              ? PlnColors.primaryBlue
+                              : PlnColors.surface,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: aktif
+                                ? PlnColors.primaryBlue
+                                : PlnColors.border,
+                          ),
+                        ),
+                        child: Text(
+                          label,
+                          style: _poppins(
+                            14,
                             FontWeight.w600,
-                            aktif ? Colors.white : PlnColors.textSecondary)),
-                  ),
-                );
-              },
+                            aktif ? Colors.white : PlnColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+              ],
             ),
           ),
           const SizedBox(height: 16),
