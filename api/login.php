@@ -28,6 +28,10 @@ if (!$validPassword) {
     json_response(["message" => "Username atau password salah."], 401);
 }
 
+if (!is_allowed_role($user)) {
+    json_response(["message" => "Akun ini tidak memiliki akses ke aplikasi."], 403);
+}
+
 $tokenPayload = [
     'id' => (int) $user['id'],
     'username' => $user['username'],

@@ -169,12 +169,23 @@ function get_auth_user($pdo)
     return $user ?: null;
 }
 
+const ALLOWED_ROLES = ['driver', 'admin', 'petugas'];
+
+function is_allowed_role($user)
+{
+    return in_array(strtolower(trim($user['role'] ?? '')), ALLOWED_ROLES, true);
+}
+
 function require_auth($pdo)
 {
     $user = get_auth_user($pdo);
 
     if (!$user) {
         json_response(["message" => "Sesi login tidak valid. Silakan login ulang."], 401);
+    }
+
+    if (!is_allowed_role($user)) {
+        json_response(["message" => "Akun ini tidak memiliki akses ke aplikasi."], 403);
     }
 
     return $user;
