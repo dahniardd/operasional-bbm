@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../config/pln_colors.dart';
@@ -6,6 +7,7 @@ import '../../services/api_service.dart';
 import '../../services/storage_service.dart';
 import '../../utils/display_format.dart';
 import '../../utils/formatters.dart'; // <- sesuaikan dengan nama file util format yang sudah ada
+import '../../widgets/pln_header_shell.dart';
 import '../login_screen.dart';
 
 // ============================================================
@@ -498,18 +500,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: PlnColors.background,
-      appBar: AppBar(
-        backgroundColor: PlnColors.background,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        foregroundColor: PlnColors.textPrimary,
-        title: Text('Profil',
-            style: _poppins(18, FontWeight.w700, PlnColors.textPrimary,
-                ls: -0.3)),
-      ),
-      body: SafeArea(
-        child: _loading
+      body: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.light,
+        child: Column(
+          children: [
+            PlnHeaderShell(
+              onBack: () => Navigator.of(context).maybePop(),
+              child: const PlnHeaderTitle(
+                icon: Icons.person_outline_rounded,
+                title: 'Profil',
+                subtitle: 'Informasi akun dan aktivitas Anda',
+              ),
+            ),
+            Expanded(
+              child: SafeArea(
+                top: false,
+                child: _loading
             ? _skeletonHalaman()
             : _error != null
                 ? Center(
@@ -603,6 +609,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                   ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
