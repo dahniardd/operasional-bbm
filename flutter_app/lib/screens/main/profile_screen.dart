@@ -108,6 +108,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   double _totalRp = 0;
   String? _terakhirTanggal;
   String? _terakhirPlat;
+  bool _aktivitasLoading = true;
 
   @override
   void initState() {
@@ -158,6 +159,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
     } catch (_) {
       // Ringkasan tidak wajib; profil tetap tampil.
+    } finally {
+      if (mounted) setState(() => _aktivitasLoading = false);
     }
   }
 
@@ -350,16 +353,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ls: -0.2)),
             ),
             const SizedBox(height: 2),
-            Text(label,
-                style: _poppins(10, FontWeight.w500, PlnColors.textSecondary)),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(label,
+                  maxLines: 1,
+                  style: _poppins(
+                      12, FontWeight.w500, PlnColors.textSecondary)),
+            ),
           ],
         ),
       ),
     );
   }
 
+  /// Kerangka bagian "Aktivitas Anda" (judul + tiga kotak statistik).
+  Widget _skeletonAktivitas() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(bottom: 10, left: 2),
+          child: _Skeleton(width: 110, height: 16, radius: 6),
+        ),
+        Row(
+          children: const [
+            Expanded(child: _Skeleton(height: 96, radius: 18)),
+            SizedBox(width: 10),
+            Expanded(child: _Skeleton(height: 96, radius: 18)),
+            SizedBox(width: 10),
+            Expanded(child: _Skeleton(height: 96, radius: 18)),
+          ],
+        ),
+        const SizedBox(height: 22),
+      ],
+    );
+  }
+
+  /// Kerangka seluruh halaman saat profil pertama kali dimuat.
+  Widget _skeletonHalaman() {
+    return ListView(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
+      children: [
+        const _Skeleton(height: 240, radius: 28),
+        const SizedBox(height: 22),
+        _skeletonAktivitas(),
+        const Padding(
+          padding: EdgeInsets.only(bottom: 10, left: 2),
+          child: _Skeleton(width: 130, height: 16, radius: 6),
+        ),
+        const _Skeleton(height: 230, radius: 20),
+      ],
+    );
+  }
+
   Widget _aktivitas() {
-    if (_totalTransaksi == null) return const SizedBox.shrink();
+    if (_totalTransaksi == null) {
+      // Pertama kali dimuat: tampilkan kerangka supaya layout tidak melompat.
+      // Kalau gagal dimuat, bagian ini disembunyikan.
+      return _aktivitasLoading ? _skeletonAktivitas() : const SizedBox.shrink();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -448,8 +502,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(label,
-                        style: _poppins(
-                            11, FontWeight.w500, PlnColors.textSecondary)),
+                        style: _poppins(12, FontWeight.w500, PlnColors.textSecondary)),
                     const SizedBox(height: 2),
                     Text(value,
                         style: _poppins(
@@ -457,8 +510,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     if (catatan != null) ...[
                       const SizedBox(height: 3),
                       Text(catatan,
-                          style: _poppins(
-                              11, FontWeight.w400, PlnColors.textSecondary)),
+                          style: _poppins(12, FontWeight.w400, PlnColors.textSecondary)),
                     ],
                   ],
                 ),
@@ -495,10 +547,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       body: SafeArea(
         child: _loading
-            ? Center(
-                child: CircularProgressIndicator(
-                    color: PlnColors.primaryBlue, strokeWidth: 3),
-              )
+            ? _skeletonHalaman()
             : _error != null
                 ? Center(
                     child: Padding(
@@ -739,6 +788,50 @@ class _KonfirmasiKeluar extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// Kerangka loading (skeleton) berdenyut
+// ============================================================
+
+class _Skeleton extends StatefulWidget {
+  final double? width;
+  final double height;
+  final double radius;
+  const _Skeleton({this.width, required this.height, this.radius = 12});
+
+  @override
+  State<_Skeleton> createState() => _SkeletonState();
+}
+
+class _SkeletonState extends State<_Skeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: Tween<double>(begin: 0.45, end: 1.0)
+          .animate(CurvedAnimation(parent: _c, curve: Curves.easeInOut)),
+      child: Container(
+        width: widget.width,
+        height: widget.height,
+        decoration: BoxDecoration(
+          color: PlnColors.border,
+          borderRadius: BorderRadius.circular(widget.radius),
         ),
       ),
     );
