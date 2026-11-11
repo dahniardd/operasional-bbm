@@ -28,7 +28,17 @@ String _rp(num v) {
   return '${v < 0 ? '-' : ''}Rp $b';
 }
 
-String _liter(num v) => v.toStringAsFixed(2).replaceAll('.', ',');
+/// 34886 -> '34.886,00'. Dua desimal dan pemisah ribuan, dipakai di mana pun.
+String _liter(num v) {
+  final parts = v.abs().toStringAsFixed(2).split('.');
+  final s = parts[0];
+  final b = StringBuffer();
+  for (var i = 0; i < s.length; i++) {
+    if (i > 0 && (s.length - i) % 3 == 0) b.write('.');
+    b.write(s[i]);
+  }
+  return '${v < 0 ? '-' : ''}$b,${parts[1]}';
+}
 
 /// '2026-09-14' -> '14 Sep 2026'
 /// Aman terhadap nilai kosong (null) dari API: tampil '-'.
@@ -209,6 +219,10 @@ class _PemakaianListState extends State<_PemakaianList>
   bool _loading = true;
   String? _error;
 
+  /// Penanda permintaan terbaru: respons lama (mis. saat mengetik cepat atau
+  /// ganti filter) diabaikan supaya tidak menimpa hasil yang lebih baru.
+  int _reqId = 0;
+
   bool get _mine => widget.scope == 'mine';
 
   @override
@@ -249,8 +263,10 @@ class _PemakaianListState extends State<_PemakaianList>
         _error = null;
       });
     }
+    final req = ++_reqId;
     try {
       final body = await _fetch(page);
+      if (req != _reqId) return;
       final data = (body['data'] as List).cast<Map<String, dynamic>>();
       final meta = body['meta'] as Map;
 
@@ -274,7 +290,7 @@ class _PemakaianListState extends State<_PemakaianList>
         _error = null;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || req != _reqId) return;
       setState(() {
         _error = _errorMessage(e);
         _loading = false;
@@ -497,8 +513,7 @@ class _PemakaianListState extends State<_PemakaianList>
                                 ),
                                 child: Text(
                                   _title(m['lokasi_pembelian']),
-                                  style: _poppins(
-                                      11,
+                                  style: _poppins(12,
                                       FontWeight.w600,
                                       paiton
                                           ? PlnColors.success
@@ -620,7 +635,7 @@ class _PemakaianListState extends State<_PemakaianList>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Dicatat oleh',
-                              style: _poppins(10, FontWeight.w400,
+                              style: _poppins(12, FontWeight.w400,
                                   PlnColors.textSecondary)),
                           Text(
                             _mine ? '$pencatat (Anda)' : pencatat,
@@ -766,7 +781,7 @@ class _PemakaianListState extends State<_PemakaianList>
       child: Column(
         children: [
           Text('Menampilkan $dari–$sampai dari $_total transaksi',
-              style: _poppins(11, FontWeight.w500, PlnColors.textSecondary)),
+              style: _poppins(12, FontWeight.w500, PlnColors.textSecondary)),
           const SizedBox(height: 4),
           Text('Halaman $_page dari $_lastPage',
               style: _poppins(12, FontWeight.w700, PlnColors.textPrimary)),
@@ -877,9 +892,7 @@ class _PemakaianListState extends State<_PemakaianList>
               Expanded(
                 child: _Ringkas(
                   label: 'Total Liter',
-                  value: _loading
-                      ? '—'
-                      : '${_totalLiter.toStringAsFixed(1).replaceAll('.', ',')} L',
+                  value: _loading ? '—' : '${_liter(_totalLiter)} L',
                   note: _mine ? 'milik Anda' : 'hanya dilihat',
                   icon: Icons.local_gas_station,
                   warna: PlnColors.success,
@@ -1005,7 +1018,7 @@ class _Ringkas extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(label,
-              style: _poppins(11, FontWeight.w500, PlnColors.textSecondary)),
+              style: _poppins(12, FontWeight.w500, PlnColors.textSecondary)),
           const SizedBox(height: 2),
           FittedBox(
             fit: BoxFit.scaleDown,
@@ -1016,7 +1029,7 @@ class _Ringkas extends StatelessWidget {
           ),
           if (note.isNotEmpty) ...[
             const SizedBox(height: 2),
-            Text(note, style: _poppins(11, FontWeight.w500, warna)),
+            Text(note, style: _poppins(12, FontWeight.w500, warna)),
           ],
         ],
       ),
@@ -1040,7 +1053,7 @@ class _Kartu extends StatelessWidget {
           color: bg,
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Text(t, style: _poppins(11, FontWeight.w600, fg)),
+        child: Text(t, style: _poppins(12, FontWeight.w600, fg)),
       );
 
   Widget _chipFoto() => Container(
@@ -1055,7 +1068,7 @@ class _Kartu extends StatelessWidget {
             Icon(Icons.image_outlined, size: 13, color: PlnColors.primaryBlue),
             const SizedBox(width: 4),
             Text('Foto',
-                style: _poppins(11, FontWeight.w600, PlnColors.primaryBlue)),
+                style: _poppins(12, FontWeight.w600, PlnColors.primaryBlue)),
           ],
         ),
       );
@@ -1112,7 +1125,7 @@ class _Kartu extends StatelessWidget {
                                   14, FontWeight.w600, PlnColors.textPrimary)),
                           const SizedBox(height: 2),
                           Text(_tgl(m['tanggal']),
-                              style: _poppins(11, FontWeight.w400,
+                              style: _poppins(12, FontWeight.w400,
                                   PlnColors.textSecondary)),
                         ],
                       ),
@@ -1151,16 +1164,14 @@ class _Kartu extends StatelessWidget {
                             PlnColors.primaryBlue.withValues(alpha: 0.12),
                         child: Text(
                           pencatat.isEmpty ? '?' : pencatat[0].toUpperCase(),
-                          style: _poppins(
-                              11, FontWeight.w700, PlnColors.primaryBlue),
+                          style: _poppins(12, FontWeight.w700, PlnColors.primaryBlue),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text('Dicatat oleh $pencatat',
                             overflow: TextOverflow.ellipsis,
-                            style: _poppins(
-                                11, FontWeight.w500, PlnColors.textSecondary)),
+                            style: _poppins(12, FontWeight.w500, PlnColors.textSecondary)),
                       ),
                       const Icon(Icons.chevron_right_rounded,
                           size: 18, color: PlnColors.textSecondary),
@@ -1296,7 +1307,7 @@ class _BuktiFotoState extends State<_BuktiFoto> {
                           size: 14, color: Colors.white),
                       const SizedBox(width: 6),
                       Text('Perbesar',
-                          style: _poppins(11, FontWeight.w600, Colors.white)),
+                          style: _poppins(12, FontWeight.w600, Colors.white)),
                     ],
                   ),
                 ),
@@ -1525,7 +1536,7 @@ class _RiwayatHeader extends StatelessWidget {
                             const SizedBox(height: 2),
                             Text(
                               'Geser untuk melihat data driver lain',
-                              style: _poppins(11, FontWeight.w400,
+                              style: _poppins(12, FontWeight.w400,
                                   Colors.white.withValues(alpha: 0.7)),
                             ),
                           ],
