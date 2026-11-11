@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../config/pln_colors.dart';
 import '../../services/api_service.dart';
 import '../../utils/display_format.dart';
+import '../../widgets/pln_header_shell.dart';
 import '../../utils/formatters.dart'; // <- sesuaikan dengan nama file util format yang sudah ada
 import 'profile_screen.dart';
 
@@ -116,9 +117,14 @@ class _HistoryPageState extends State<HistoryPage> {
         color: PlnColors.background,
         child: Column(
           children: [
-            _RiwayatHeader(
+            PlnHeaderShell(
               onProfileTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              ),
+              child: const PlnHeaderTitle(
+                icon: Icons.history_rounded,
+                title: 'Riwayat Pengisian',
+                subtitle: 'Geser untuk melihat data driver lain',
               ),
             ),
             _SlideSwitch(page: _page, onTab: _goTo),
@@ -1326,192 +1332,6 @@ class _FotoViewer extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-// ============================================================
-// Header Riwayat (gaya sama dengan header Dashboard)
-// ============================================================
-
-class _RiwayatHeader extends StatelessWidget {
-  final VoidCallback onProfileTap;
-
-  const _RiwayatHeader({required this.onProfileTap});
-
-  Widget _tombolProfil() {
-    return Tooltip(
-      message: 'Profil',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onProfileTap,
-          borderRadius: BorderRadius.circular(9),
-          child: Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(9),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.18),
-                width: 1,
-              ),
-            ),
-            child: Icon(
-              Icons.person_outline_rounded,
-              color: Colors.white.withValues(alpha: 0.9),
-              size: 18,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [PlnColors.primaryBlue, PlnColors.darkNavy],
-        ),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: PlnColors.primaryBlue.withValues(alpha: 0.2),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Hiasan lingkaran (sama dengan Dashboard)
-          Positioned(
-            right: -24,
-            top: -28,
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.05),
-              ),
-            ),
-          ),
-          Positioned(
-            left: -40,
-            bottom: -60,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: PlnColors.accentYellow.withValues(alpha: 0.06),
-              ),
-            ),
-          ),
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
-              child: Column(
-                children: [
-                  // Identitas aplikasi + tombol profil
-                  Row(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(9),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.18),
-                          ),
-                        ),
-                        child: Image.asset(
-                          'assets/images/logo.png',
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => const Icon(
-                            Icons.bolt_rounded,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 9),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'PLN NP',
-                            style: _poppins(10, FontWeight.w600,
-                                Colors.white.withValues(alpha: 0.9)),
-                          ),
-                          Text(
-                            'e-Operasional',
-                            style: _poppins(13, FontWeight.w700, Colors.white),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      _tombolProfil(),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Judul halaman
-                  Row(
-                    children: [
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.18),
-                          ),
-                        ),
-                        child: const Icon(Icons.history_rounded,
-                            color: Colors.white, size: 22),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Riwayat Pengisian',
-                              style: _poppins(18, FontWeight.w700, Colors.white,
-                                  ls: -0.4),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Geser untuk melihat data driver lain',
-                              style: _poppins(12, FontWeight.w400,
-                                  Colors.white.withValues(alpha: 0.7)),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
