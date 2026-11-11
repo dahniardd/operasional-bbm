@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../config/app_colors.dart';
+import '../../config/app_theme.dart';
 
 class InputPage extends StatelessWidget {
   const InputPage({super.key});

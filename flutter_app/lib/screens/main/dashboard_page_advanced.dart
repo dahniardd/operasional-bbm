@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../../config/pln_colors.dart';
+import '../../config/app_theme.dart';
 import '../../models/pemakaian_bbm.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/pemakaian_bbm_provider.dart';
@@ -89,7 +89,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
         SnackBar(
           content: Text('Gagal memuat data: $error'),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: PlnColors.danger,
+          backgroundColor: AppColors.danger,
           margin: const EdgeInsets.all(16),
         ),
       );
@@ -165,7 +165,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Container(
-        color: PlnColors.background,
+        color: AppColors.background,
         child: Column(
           children: [
             AdvancedHeader(
@@ -181,7 +181,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                       opacity: _fadeAnimation,
                       child: RefreshIndicator(
                         onRefresh: () => _loadDashboardData(silent: true),
-                        color: PlnColors.primaryBlue,
+                        color: AppColors.primary,
                         backgroundColor: Colors.white,
                         child: MediaQuery.removePadding(
                           context: context,
@@ -233,12 +233,12 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
             height: 80,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [PlnColors.primaryBlue, PlnColors.darkNavy],
+                colors: [AppColors.primary, AppColors.darkNavy],
               ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: PlnColors.primaryBlue.withValues(alpha: 0.3),
+                  color: AppColors.primary.withValues(alpha: 0.3),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -257,7 +257,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
             style: GoogleFonts.poppins(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: PlnColors.primaryBlue,
+              color: AppColors.primary,
             ),
           ),
         ],
@@ -283,7 +283,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: PlnColors.textPrimary,
+                      color: AppColors.textPrimary,
                       letterSpacing: -0.3,
                     ),
                   ),
@@ -293,7 +293,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                     style: GoogleFonts.poppins(
                       fontSize: 11,
                       fontWeight: FontWeight.w400,
-                      color: PlnColors.textSecondary,
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],
@@ -304,10 +304,10 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: PlnColors.primaryBlue.withValues(alpha: 0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: PlnColors.primaryBlue.withValues(alpha: 0.2),
+                    color: AppColors.primary.withValues(alpha: 0.2),
                     width: 1,
                   ),
                 ),
@@ -316,7 +316,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                     Icon(
                       Icons.calendar_today,
                       size: 12,
-                      color: PlnColors.primaryBlue,
+                      color: AppColors.primary,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -324,7 +324,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                       style: GoogleFonts.poppins(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: PlnColors.primaryBlue,
+                        color: AppColors.primary,
                       ),
                     ),
                   ],
@@ -350,16 +350,16 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                   decimalDigits: 0,
                 ).format(stats['todayTotal'] ?? 0),
                 icon: Icons.attach_money,
-                primaryColor: PlnColors.primaryBlue,
-                backgroundColor: const Color(0xFFE8F4FF),
+                primaryColor: AppColors.primary,
+                backgroundColor: AppColors.primarySoft,
               ),
               AdvancedStatCard(
                 label: 'Total Liter',
                 value:
                     '${(stats['todayLiter'] as double? ?? 0).toStringAsFixed(1)} L',
                 icon: Icons.local_gas_station,
-                primaryColor: PlnColors.success,
-                backgroundColor: const Color(0xFFE8F9F5),
+                primaryColor: AppColors.success,
+                backgroundColor: AppColors.successSoft,
               ),
               AdvancedStatCard(
                 label: 'Bulan Ini',
@@ -370,8 +370,8 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                 ).format(stats['monthTotal'] ?? 0),
                 subtitle: '${(stats['monthCount'] ?? 0)} transaksi',
                 icon: Icons.receipt_long,
-                primaryColor: PlnColors.accentYellow,
-                backgroundColor: const Color(0xFFFEF3E2),
+                primaryColor: AppColors.accentYellow,
+                backgroundColor: AppColors.warningSoft,
                 change: stats['percentageChange'] as double?,
                 isPositive: (stats['percentageChange'] as double? ?? 0) >= 0,
               ),
@@ -380,8 +380,8 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                 value: '${stats['totalVehicles'] ?? 0} Unit',
                 subtitle: 'tersedia',
                 icon: Icons.directions_car,
-                primaryColor: PlnColors.primaryBlue,
-                backgroundColor: const Color(0xFFE8F4FF),
+                primaryColor: AppColors.primary,
+                backgroundColor: AppColors.primarySoft,
               ),
             ],
           ),
@@ -401,7 +401,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
             style: GoogleFonts.poppins(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: PlnColors.textPrimary,
+              color: AppColors.textPrimary,
               letterSpacing: -0.3,
             ),
           ),
@@ -419,8 +419,8 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                 label: 'Catat BBM',
                 description: 'Input pemakaian baru',
                 icon: Icons.local_gas_station,
-                primaryColor: PlnColors.primaryBlue,
-                backgroundColor: const Color(0xFFE8F4FF),
+                primaryColor: AppColors.primary,
+                backgroundColor: AppColors.primarySoft,
                 isPrimary: true,
                 onTap: () {
                   Navigator.push(
@@ -433,8 +433,8 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                 label: 'Riwayat',
                 description: 'Lihat semua transaksi',
                 icon: Icons.history,
-                primaryColor: PlnColors.success,
-                backgroundColor: const Color(0xFFE8F9F5),
+                primaryColor: AppColors.success,
+                backgroundColor: AppColors.successSoft,
                 onTap: () => widget.onOpenHistory?.call(),
               ),
             ],
@@ -471,7 +471,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: PlnColors.textPrimary,
+                      color: AppColors.textPrimary,
                       letterSpacing: -0.3,
                     ),
                   ),
@@ -481,7 +481,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       fontWeight: FontWeight.w400,
-                      color: PlnColors.textSecondary,
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],
@@ -499,7 +499,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: PlnColors.primaryBlue,
+                          color: AppColors.primary,
                         ),
                       ),
                     ),
@@ -512,20 +512,20 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
             Container(
               padding: const EdgeInsets.all(40),
               decoration: BoxDecoration(
-                color: PlnColors.surface,
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: PlnColors.border, width: 1),
+                border: Border.all(color: AppColors.border, width: 1),
               ),
               child: Column(
                 children: [
-                  Icon(Icons.inbox_outlined, size: 48, color: PlnColors.border),
+                  Icon(Icons.inbox_outlined, size: 48, color: AppColors.border),
                   const SizedBox(height: 12),
                   Text(
                     'Belum ada riwayat pengisian',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: PlnColors.textSecondary,
+                      color: AppColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -533,7 +533,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                     'Mulai dengan catat BBM untuk melihat riwayat',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: PlnColors.textSecondary,
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],

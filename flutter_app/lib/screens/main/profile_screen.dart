@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../config/pln_colors.dart';
+import '../../config/app_theme.dart';
 import '../../services/api_service.dart';
 import '../../services/storage_service.dart';
 import '../login_screen.dart';
@@ -254,7 +254,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [PlnColors.primaryBlue, PlnColors.darkNavy],
+            colors: [AppColors.primary, AppColors.darkNavy],
           ),
         ),
         child: Stack(
@@ -326,9 +326,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Container(
         padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
         decoration: BoxDecoration(
-          color: PlnColors.surface,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: PlnColors.border),
+          border: Border.all(color: AppColors.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -346,12 +346,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
               child: Text(nilai,
-                  style: _poppins(15, FontWeight.w700, PlnColors.textPrimary,
+                  style: _poppins(15, FontWeight.w700, AppColors.textPrimary,
                       ls: -0.2)),
             ),
             const SizedBox(height: 2),
             Text(label,
-                style: _poppins(10, FontWeight.w500, PlnColors.textSecondary)),
+                style: _poppins(10, FontWeight.w500, AppColors.textSecondary)),
           ],
         ),
       ),
@@ -368,14 +368,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Row(
           children: [
             _statMini(Icons.receipt_long_outlined, '$_totalTransaksi',
-                'Transaksi', PlnColors.primaryBlue),
+                'Transaksi', AppColors.primary),
             const SizedBox(width: 10),
             _statMini(Icons.local_gas_station_outlined,
                 '${_angka(_totalLiter, desimal: 1)} L', 'Total BBM',
-                PlnColors.success),
+                AppColors.success),
             const SizedBox(width: 10),
             _statMini(Icons.payments_outlined, _rpRingkas(_totalRp),
-                'Pengeluaran', PlnColors.warning),
+                'Pengeluaran', AppColors.warning),
           ],
         ),
         if (_terakhirTanggal != null) ...[
@@ -383,19 +383,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: PlnColors.primaryBlue.withValues(alpha: 0.07),
+              color: AppColors.primary.withValues(alpha: 0.07),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               children: [
-                Icon(Icons.history, size: 20, color: PlnColors.primaryBlue),
+                Icon(Icons.history, size: 20, color: AppColors.primary),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     'Terakhir mengisi ${_tgl(_terakhirTanggal!)}'
                     '${_terakhirPlat != null ? ' • $_terakhirPlat' : ''}',
                     style: _poppins(
-                        12, FontWeight.w500, PlnColors.textPrimary),
+                        12, FontWeight.w500, AppColors.textPrimary),
                   ),
                 ),
               ],
@@ -410,16 +410,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _judul(String t) => Padding(
         padding: const EdgeInsets.only(bottom: 10, left: 2),
         child: Text(t,
-            style: _poppins(14, FontWeight.w700, PlnColors.textPrimary)),
+            style: _poppins(14, FontWeight.w700, AppColors.textPrimary)),
       );
 
   Widget _kotak(List<Widget> isi) => Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: PlnColors.surface,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: PlnColors.border),
+          border: Border.all(color: AppColors.border),
         ),
         child: Column(children: isi),
       );
@@ -437,10 +437,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: PlnColors.primaryBlue.withValues(alpha: 0.08),
+                  color: AppColors.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, size: 19, color: PlnColors.primaryBlue),
+                child: Icon(icon, size: 19, color: AppColors.primary),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -449,16 +449,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Text(label,
                         style: _poppins(
-                            11, FontWeight.w500, PlnColors.textSecondary)),
+                            11, FontWeight.w500, AppColors.textSecondary)),
                     const SizedBox(height: 2),
                     Text(value,
                         style: _poppins(
-                            14, FontWeight.w600, PlnColors.textPrimary)),
+                            14, FontWeight.w600, AppColors.textPrimary)),
                     if (catatan != null) ...[
                       const SizedBox(height: 3),
                       Text(catatan,
                           style: _poppins(
-                              11, FontWeight.w400, PlnColors.textSecondary)),
+                              11, FontWeight.w400, AppColors.textSecondary)),
                     ],
                   ],
                 ),
@@ -470,7 +470,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
         ),
-        if (!terakhir) Divider(height: 1, color: PlnColors.border),
+        if (!terakhir) Divider(height: 1, color: AppColors.border),
       ],
     );
   }
@@ -482,22 +482,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final peran = _peran(role);
 
     return Scaffold(
-      backgroundColor: PlnColors.background,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: PlnColors.background,
+        backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        foregroundColor: PlnColors.textPrimary,
+        foregroundColor: AppColors.textPrimary,
         title: Text('Profil',
-            style: _poppins(18, FontWeight.w700, PlnColors.textPrimary,
+            style: _poppins(18, FontWeight.w700, AppColors.textPrimary,
                 ls: -0.3)),
       ),
       body: SafeArea(
         child: _loading
             ? Center(
                 child: CircularProgressIndicator(
-                    color: PlnColors.primaryBlue, strokeWidth: 3),
+                    color: AppColors.primary, strokeWidth: 3),
               )
             : _error != null
                 ? Center(
@@ -507,17 +507,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.cloud_off_outlined,
-                              size: 48, color: PlnColors.danger),
+                              size: 48, color: AppColors.danger),
                           const SizedBox(height: 12),
                           Text(_error!,
                               textAlign: TextAlign.center,
                               style: _poppins(13, FontWeight.w400,
-                                  PlnColors.textSecondary)),
+                                  AppColors.textSecondary)),
                           const SizedBox(height: 16),
                           FilledButton(
                             onPressed: _load,
                             style: FilledButton.styleFrom(
-                                backgroundColor: PlnColors.primaryBlue),
+                                backgroundColor: AppColors.primary),
                             child: const Text('Coba Lagi'),
                           ),
                         ],
@@ -526,7 +526,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   )
                 : RefreshIndicator(
                     onRefresh: _loadAktivitas,
-                    color: PlnColors.primaryBlue,
+                    color: AppColors.primary,
                     child: ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
@@ -548,12 +548,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               trailing: Container(
                                 padding: const EdgeInsets.all(7),
                                 decoration: BoxDecoration(
-                                  color: PlnColors.success
+                                  color: AppColors.success
                                       .withValues(alpha: 0.12),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(Icons.lock_rounded,
-                                    size: 16, color: PlnColors.success),
+                                    size: 16, color: AppColors.success),
                               ),
                               terakhir: true),
                         ]),
@@ -576,10 +576,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 style: _poppins(
                                     14, FontWeight.w600, Colors.white)),
                             style: FilledButton.styleFrom(
-                              backgroundColor: PlnColors.danger,
+                              backgroundColor: AppColors.danger,
                               foregroundColor: Colors.white,
                               disabledBackgroundColor:
-                                  PlnColors.danger.withValues(alpha: 0.5),
+                                  AppColors.danger.withValues(alpha: 0.5),
                               disabledForegroundColor: Colors.white,
                               elevation: 0,
                               minimumSize: const Size.fromHeight(52),
@@ -606,7 +606,7 @@ class _KonfirmasiKeluar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final merahGelap = Color.lerp(PlnColors.danger, Colors.black, 0.3)!;
+    final merahGelap = Color.lerp(AppColors.danger, Colors.black, 0.3)!;
 
     return Center(
       child: Material(
@@ -616,7 +616,7 @@ class _KonfirmasiKeluar extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: 340),
           padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
           decoration: BoxDecoration(
-            color: PlnColors.surface,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(28),
             boxShadow: [
               BoxShadow(
@@ -639,11 +639,11 @@ class _KonfirmasiKeluar extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [PlnColors.danger, merahGelap],
+                    colors: [AppColors.danger, merahGelap],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: PlnColors.danger.withValues(alpha: 0.32),
+                      color: AppColors.danger.withValues(alpha: 0.32),
                       blurRadius: 16,
                       offset: const Offset(0, 8),
                     ),
@@ -656,21 +656,21 @@ class _KonfirmasiKeluar extends StatelessWidget {
               Text(
                 'Keluar dari akun?',
                 textAlign: TextAlign.center,
-                style: _poppins(20, FontWeight.w700, PlnColors.textPrimary,
+                style: _poppins(20, FontWeight.w700, AppColors.textPrimary,
                     ls: -0.3),
               ),
               const SizedBox(height: 8),
               Text.rich(
                 TextSpan(
                   style: _poppins(
-                      13, FontWeight.w400, PlnColors.textSecondary),
+                      13, FontWeight.w400, AppColors.textSecondary),
                   children: [
                     if (nama.isNotEmpty) ...[
                       const TextSpan(text: 'Akun '),
                       TextSpan(
                         text: nama,
                         style: _poppins(
-                            13, FontWeight.w700, PlnColors.textPrimary),
+                            13, FontWeight.w700, AppColors.textPrimary),
                       ),
                       const TextSpan(text: ' akan keluar dari perangkat ini. '),
                     ],
@@ -688,8 +688,8 @@ class _KonfirmasiKeluar extends StatelessWidget {
                     child: FilledButton(
                       onPressed: () => Navigator.pop(context, false),
                       style: FilledButton.styleFrom(
-                        backgroundColor: PlnColors.background,
-                        foregroundColor: PlnColors.textSecondary,
+                        backgroundColor: AppColors.background,
+                        foregroundColor: AppColors.textSecondary,
                         elevation: 0,
                         minimumSize: const Size.fromHeight(50),
                         shape: RoundedRectangleBorder(
@@ -697,7 +697,7 @@ class _KonfirmasiKeluar extends StatelessWidget {
                       ),
                       child: Text('Batal',
                           style: _poppins(
-                              14, FontWeight.w600, PlnColors.textSecondary)),
+                              14, FontWeight.w600, AppColors.textSecondary)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -714,13 +714,13 @@ class _KonfirmasiKeluar extends StatelessWidget {
                             gradient: LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                              colors: [PlnColors.danger, merahGelap],
+                              colors: [AppColors.danger, merahGelap],
                             ),
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
                                 color:
-                                    PlnColors.danger.withValues(alpha: 0.3),
+                                    AppColors.danger.withValues(alpha: 0.3),
                                 blurRadius: 12,
                                 offset: const Offset(0, 6),
                               ),

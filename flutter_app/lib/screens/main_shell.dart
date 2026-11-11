@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../config/app_colors.dart';
+import '../config/app_theme.dart';
 import '../widgets/custom_bottom_nav.dart';
 import 'main/dashboard_page_advanced.dart' show DashboardPageAdvanced;
 import 'main/history_page.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../config/pln_colors.dart';
+import '../config/app_theme.dart';
 
 /// Advanced Stat Card dengan animasi dan glassmorphism effect
 class AdvancedStatCard extends StatefulWidget {
@@ -134,7 +134,7 @@ class _AdvancedStatCardState extends State<AdvancedStatCard>
                                     style: GoogleFonts.poppins(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w500,
-                                      color: PlnColors.textSecondary,
+                                      color: AppColors.textSecondary,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -187,10 +187,10 @@ class _AdvancedStatCardState extends State<AdvancedStatCard>
                                   ),
                                   decoration: BoxDecoration(
                                     color: widget.isPositive
-                                        ? PlnColors.success.withValues(
+                                        ? AppColors.success.withValues(
                                             alpha: 0.1,
                                           )
-                                        : PlnColors.danger.withValues(
+                                        : AppColors.danger.withValues(
                                             alpha: 0.1,
                                           ),
                                     borderRadius: BorderRadius.circular(5),
@@ -204,8 +204,8 @@ class _AdvancedStatCardState extends State<AdvancedStatCard>
                                             : Icons.trending_down,
                                         size: 12,
                                         color: widget.isPositive
-                                            ? PlnColors.success
-                                            : PlnColors.danger,
+                                            ? AppColors.success
+                                            : AppColors.danger,
                                       ),
                                       const SizedBox(width: 2),
                                       Text(
@@ -214,8 +214,8 @@ class _AdvancedStatCardState extends State<AdvancedStatCard>
                                           fontSize: 10,
                                           fontWeight: FontWeight.w600,
                                           color: widget.isPositive
-                                              ? PlnColors.success
-                                              : PlnColors.danger,
+                                              ? AppColors.success
+                                              : AppColors.danger,
                                         ),
                                       ),
                                     ],
@@ -229,7 +229,7 @@ class _AdvancedStatCardState extends State<AdvancedStatCard>
                                     widget.subtitle!,
                                     style: GoogleFonts.poppins(
                                       fontSize: 10,
-                                      color: PlnColors.textSecondary,
+                                      color: AppColors.textSecondary,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,

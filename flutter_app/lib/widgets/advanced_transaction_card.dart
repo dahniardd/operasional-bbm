@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../config/pln_colors.dart';
+import '../config/app_theme.dart';
 import '../models/pemakaian_bbm.dart';
 
 /// Advanced Transaction Card dengan detail expandable
@@ -108,9 +108,9 @@ class _AdvancedTransactionCardState extends State<AdvancedTransactionCard>
 
     return Container(
       decoration: BoxDecoration(
-        color: PlnColors.surface,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: PlnColors.border, width: 1),
+        border: Border.all(color: AppColors.border, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -138,15 +138,15 @@ class _AdvancedTransactionCardState extends State<AdvancedTransactionCard>
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            PlnColors.primaryBlue.withValues(alpha: 0.1),
-                            PlnColors.primaryBlue.withValues(alpha: 0.05),
+                            AppColors.primary.withValues(alpha: 0.1),
+                            AppColors.primary.withValues(alpha: 0.05),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(11),
                       ),
                       child: const Icon(
                         Icons.local_gas_station,
-                        color: PlnColors.primaryBlue,
+                        color: AppColors.primary,
                         size: 22,
                       ),
                     ),
@@ -161,7 +161,7 @@ class _AdvancedTransactionCardState extends State<AdvancedTransactionCard>
                             style: GoogleFonts.poppins(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
-                              color: PlnColors.textPrimary,
+                              color: AppColors.textPrimary,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -172,7 +172,7 @@ class _AdvancedTransactionCardState extends State<AdvancedTransactionCard>
                               Icon(
                                 Icons.calendar_today,
                                 size: 12,
-                                color: PlnColors.textSecondary,
+                                color: AppColors.textSecondary,
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -182,14 +182,14 @@ class _AdvancedTransactionCardState extends State<AdvancedTransactionCard>
                                 ).format(tx.tanggal),
                                 style: GoogleFonts.poppins(
                                   fontSize: 11,
-                                  color: PlnColors.textSecondary,
+                                  color: AppColors.textSecondary,
                                 ),
                               ),
                               const SizedBox(width: 10),
                               Container(
                                 width: 1,
                                 height: 10,
-                                color: PlnColors.border,
+                                color: AppColors.border,
                               ),
                               const SizedBox(width: 10),
                               Text(
@@ -197,7 +197,7 @@ class _AdvancedTransactionCardState extends State<AdvancedTransactionCard>
                                 style: GoogleFonts.poppins(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: PlnColors.primaryBlue,
+                                  color: AppColors.primary,
                                 ),
                               ),
                             ],
@@ -214,13 +214,13 @@ class _AdvancedTransactionCardState extends State<AdvancedTransactionCard>
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: PlnColors.primaryBlue,
+                            color: AppColors.primary,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Icon(
                           _isExpanded ? Icons.expand_less : Icons.expand_more,
-                          color: PlnColors.textSecondary,
+                          color: AppColors.textSecondary,
                           size: 20,
                         ),
                       ],
@@ -240,9 +240,9 @@ class _AdvancedTransactionCardState extends State<AdvancedTransactionCard>
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: PlnColors.background,
+                          color: AppColors.background,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: PlnColors.border),
+                          border: Border.all(color: AppColors.border),
                         ),
                         child: Column(
                           children: [
@@ -251,13 +251,13 @@ class _AdvancedTransactionCardState extends State<AdvancedTransactionCard>
                               _formatBbmName(tx.jenisBbm),
                               Icons.local_gas_station,
                             ),
-                            const Divider(height: 1, color: PlnColors.border),
+                            const Divider(height: 1, color: AppColors.border),
                             _buildDetailRow(
                               'Jumlah',
                               '${tx.liter.toStringAsFixed(1)} Liter',
                               Icons.format_list_numbered,
                             ),
-                            const Divider(height: 1, color: PlnColors.border),
+                            const Divider(height: 1, color: AppColors.border),
                             _buildDetailRow(
                               'Lokasi',
                               tx.lokasiPembelian == 'paiton'
@@ -265,7 +265,7 @@ class _AdvancedTransactionCardState extends State<AdvancedTransactionCard>
                                   : 'Luar Paiton',
                               Icons.location_on,
                             ),
-                            const Divider(height: 1, color: PlnColors.border),
+                            const Divider(height: 1, color: AppColors.border),
                             _buildDetailRow(
                               'Harga/Liter',
                               pricePerLiter,
@@ -290,7 +290,7 @@ class _AdvancedTransactionCardState extends State<AdvancedTransactionCard>
       padding: const EdgeInsets.symmetric(vertical: 9),
       child: Row(
         children: [
-          Icon(icon, size: 14, color: PlnColors.textSecondary),
+          Icon(icon, size: 14, color: AppColors.textSecondary),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -298,7 +298,7 @@ class _AdvancedTransactionCardState extends State<AdvancedTransactionCard>
               style: GoogleFonts.poppins(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
-                color: PlnColors.textSecondary,
+                color: AppColors.textSecondary,
               ),
             ),
           ),
@@ -311,7 +311,7 @@ class _AdvancedTransactionCardState extends State<AdvancedTransactionCard>
               style: GoogleFonts.poppins(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: PlnColors.textPrimary,
+                color: AppColors.textPrimary,
               ),
             ),
           ),

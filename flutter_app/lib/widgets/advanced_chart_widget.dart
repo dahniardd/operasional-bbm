@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../config/pln_colors.dart';
+import '../config/app_theme.dart';
 import '../models/pemakaian_bbm.dart';
 
 /// Advanced Chart Widget dengan period selector dan animasi
@@ -188,9 +188,9 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
       scale: _scaleAnimation,
       child: Container(
         decoration: BoxDecoration(
-          color: PlnColors.surface,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: PlnColors.border, width: 1),
+          border: Border.all(color: AppColors.border, width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -217,7 +217,7 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: PlnColors.textPrimary,
+                          color: AppColors.textPrimary,
                           letterSpacing: -0.3,
                         ),
                       ),
@@ -227,7 +227,7 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
                         style: GoogleFonts.poppins(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
-                          color: PlnColors.textSecondary,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
@@ -237,12 +237,12 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(
-                      color: PlnColors.primaryBlue.withValues(alpha: 0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
                       Icons.bar_chart_rounded,
-                      color: PlnColors.primaryBlue,
+                      color: AppColors.primary,
                       size: 20,
                     ),
                   ),
@@ -254,7 +254,7 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
               Container(
                 padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
-                  color: PlnColors.background,
+                  color: AppColors.background,
                   borderRadius: BorderRadius.circular(9),
                 ),
                 child: Row(
@@ -277,14 +277,14 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
                     style: GoogleFonts.poppins(
                       fontSize: 10,
                       fontWeight: FontWeight.w500,
-                      color: PlnColors.textSecondary,
+                      color: AppColors.textSecondary,
                     ),
                   ),
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
-                      color: PlnColors.background,
+                      color: AppColors.background,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -311,7 +311,7 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
                       Icon(
                         Icons.bar_chart_outlined,
                         size: 40,
-                        color: PlnColors.border,
+                        color: AppColors.border,
                       ),
                       const SizedBox(height: 10),
                       Text(
@@ -320,7 +320,7 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
                         style: GoogleFonts.poppins(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: PlnColors.textSecondary,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -329,7 +329,7 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
                         textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
                           fontSize: 11,
-                          color: PlnColors.textSecondary,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
@@ -348,7 +348,7 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
                             'Total Liter',
                             '${totalLiter.toStringAsFixed(1)} L',
                             Icons.local_gas_station,
-                            PlnColors.primaryBlue,
+                            AppColors.primary,
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -361,7 +361,7 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
                               decimalDigits: 0,
                             ).format(totalCost),
                             Icons.attach_money,
-                            PlnColors.accentYellow,
+                            AppColors.accentYellow,
                           ),
                         ),
                       ],
@@ -374,7 +374,7 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
                             'Rata-rata/Hari',
                             '${avgDaily.toStringAsFixed(1)} L',
                             Icons.trending_up,
-                            PlnColors.success,
+                            AppColors.success,
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -383,7 +383,7 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
                             'Jumlah Isi',
                             '${data.length}x',
                             Icons.receipt_long,
-                            PlnColors.primaryBlue,
+                            AppColors.primary,
                           ),
                         ),
                       ],
@@ -408,7 +408,7 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 7),
             decoration: BoxDecoration(
-              color: isSelected ? PlnColors.primaryBlue : Colors.transparent,
+              color: isSelected ? AppColors.primary : Colors.transparent,
               borderRadius: BorderRadius.circular(7),
             ),
             child: Text(
@@ -417,7 +417,7 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
               style: GoogleFonts.poppins(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : PlnColors.textSecondary,
+                color: isSelected ? Colors.white : AppColors.textSecondary,
               ),
             ),
           ),
@@ -437,7 +437,7 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: isSelected ? PlnColors.primaryBlue : Colors.transparent,
+            color: isSelected ? AppColors.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(6),
           ),
           child: Text(
@@ -445,7 +445,7 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
             style: GoogleFonts.poppins(
               fontSize: 10,
               fontWeight: FontWeight.w600,
-              color: isSelected ? Colors.white : PlnColors.textSecondary,
+              color: isSelected ? Colors.white : AppColors.textSecondary,
             ),
           ),
         ),
@@ -483,8 +483,8 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
                         fontSize: 9,
                         fontWeight: FontWeight.w600,
                         color: isMax
-                            ? PlnColors.primaryBlue
-                            : PlnColors.textSecondary,
+                            ? AppColors.primary
+                            : AppColors.textSecondary,
                       ),
                     ),
                   ),
@@ -497,8 +497,8 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
                         begin: Alignment.bottomCenter,
                         end: Alignment.topCenter,
                         colors: [
-                          PlnColors.primaryBlue,
-                          PlnColors.primaryBlue.withValues(
+                          AppColors.primary,
+                          AppColors.primary.withValues(
                             alpha: isMax ? 0.7 : 0.45,
                           ),
                         ],
@@ -519,7 +519,7 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
                       style: GoogleFonts.poppins(
                         fontSize: 9,
                         fontWeight: FontWeight.w500,
-                        color: PlnColors.textSecondary,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ),
@@ -577,7 +577,7 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
                   style: GoogleFonts.poppins(
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
-                    color: PlnColors.textSecondary,
+                    color: AppColors.textSecondary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../config/pln_colors.dart';
+import '../config/app_theme.dart';
 import '../models/pemakaian_bbm.dart';
 
 /// BBM Usage Chart Widget
@@ -91,9 +91,9 @@ class _BbmUsageChartState extends State<BbmUsageChart>
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        color: PlnColors.surface,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: PlnColors.border, width: 1),
+        border: Border.all(color: AppColors.border, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -119,7 +119,7 @@ class _BbmUsageChartState extends State<BbmUsageChart>
                       style: GoogleFonts.poppins(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: PlnColors.textPrimary,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -127,7 +127,7 @@ class _BbmUsageChartState extends State<BbmUsageChart>
                       periodLabel,
                       style: GoogleFonts.poppins(
                         fontSize: 11,
-                        color: PlnColors.textSecondary,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -136,12 +136,12 @@ class _BbmUsageChartState extends State<BbmUsageChart>
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: PlnColors.primaryBlue.withValues(alpha: 0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.bar_chart,
-                    color: PlnColors.primaryBlue,
+                    color: AppColors.primary,
                     size: 20,
                   ),
                 ),
@@ -152,7 +152,7 @@ class _BbmUsageChartState extends State<BbmUsageChart>
             Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: PlnColors.background,
+                color: AppColors.background,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -175,14 +175,14 @@ class _BbmUsageChartState extends State<BbmUsageChart>
                     Icon(
                       Icons.bar_chart_outlined,
                       size: 40,
-                      color: PlnColors.border,
+                      color: AppColors.border,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Belum ada data',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
-                        color: PlnColors.textSecondary,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -199,7 +199,7 @@ class _BbmUsageChartState extends State<BbmUsageChart>
                           'Total Liter',
                           '${totalLiter.toStringAsFixed(1)} L',
                           Icons.local_gas_station,
-                          PlnColors.primaryBlue,
+                          AppColors.primary,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -212,7 +212,7 @@ class _BbmUsageChartState extends State<BbmUsageChart>
                             decimalDigits: 0,
                           ).format(totalCost),
                           Icons.attach_money,
-                          PlnColors.accentYellow,
+                          AppColors.accentYellow,
                         ),
                       ),
                     ],
@@ -240,7 +240,7 @@ class _BbmUsageChartState extends State<BbmUsageChart>
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 6),
             decoration: BoxDecoration(
-              color: isSelected ? PlnColors.primaryBlue : Colors.transparent,
+              color: isSelected ? AppColors.primary : Colors.transparent,
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
@@ -249,7 +249,7 @@ class _BbmUsageChartState extends State<BbmUsageChart>
               style: GoogleFonts.poppins(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : PlnColors.textSecondary,
+                color: isSelected ? Colors.white : AppColors.textSecondary,
               ),
             ),
           ),
@@ -284,7 +284,7 @@ class _BbmUsageChartState extends State<BbmUsageChart>
                   style: GoogleFonts.poppins(
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
-                    color: PlnColors.textSecondary,
+                    color: AppColors.textSecondary,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
