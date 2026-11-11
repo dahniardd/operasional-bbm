@@ -20,15 +20,13 @@ class _MainShellState extends State<MainShell> {
 
   int _currentIndex = _tabDashboard;
 
-  /// Naik setiap kali data perlu dimuat ulang (pindah tab, atau selesai input).
-  /// Satu penanda yang sama dipakai Dashboard dan Riwayat supaya angkanya
-  /// selalu berasal dari data terbaru yang sama.
-  int _dataTick = 0;
+  /// Naik setiap kali Riwayat perlu dimuat ulang (buka tab, atau selesai input).
+  int _historyTick = 0;
 
   void _openHistory() {
     setState(() {
       _currentIndex = _tabHistory;
-      _dataTick++;
+      _historyTick++;
     });
   }
 
@@ -36,9 +34,8 @@ class _MainShellState extends State<MainShell> {
     await Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => const InputBbmScreen()));
-    // Setelah kembali dari form input, data baru harus muncul di Dashboard
-    // dan Riwayat.
-    if (mounted) setState(() => _dataTick++);
+    // Setelah kembali dari form input, data baru harus muncul di Riwayat.
+    if (mounted) setState(() => _historyTick++);
   }
 
   @override
@@ -51,12 +48,9 @@ class _MainShellState extends State<MainShell> {
       body: IndexedStack(
         index: _currentIndex,
         children: [
-          DashboardPageAdvanced(
-            onOpenHistory: _openHistory,
-            refreshTick: _dataTick,
-          ),
+          DashboardPageAdvanced(onOpenHistory: _openHistory),
           const InputPage(),
-          HistoryPage(refreshTick: _dataTick),
+          HistoryPage(refreshTick: _historyTick),
         ],
       ),
       bottomNavigationBar: CustomBottomNav(
@@ -69,8 +63,7 @@ class _MainShellState extends State<MainShell> {
 
           setState(() {
             _currentIndex = index;
-            // Muat ulang diam-diam saat membuka Dashboard atau Riwayat.
-            _dataTick++;
+            if (index == _tabHistory) _historyTick++;
           });
         },
       ),
