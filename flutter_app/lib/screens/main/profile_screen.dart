@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../config/pln_colors.dart';
 import '../../services/api_service.dart';
 import '../../services/storage_service.dart';
+import '../../utils/display_format.dart';
+import '../../utils/formatters.dart'; // <- sesuaikan dengan nama file util format yang sudah ada
 import '../login_screen.dart';
 
 // ============================================================
@@ -17,45 +19,6 @@ TextStyle _poppins(double size, FontWeight w, Color c, {double? ls}) =>
       color: c,
       letterSpacing: ls,
     );
-
-const _bulan = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-  'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
-];
-
-String _tgl(String raw) {
-  final iso = raw.length >= 10 ? raw.substring(0, 10) : raw;
-  final p = iso.split('-');
-  if (p.length != 3) return raw;
-  final m = int.tryParse(p[1]) ?? 0;
-  if (m < 1 || m > 12) return raw;
-  return '${int.tryParse(p[2]) ?? p[2]} ${_bulan[m - 1]} ${p[0]}';
-}
-
-String _angka(num v, {int desimal = 0}) {
-  final s = v.toStringAsFixed(desimal);
-  final parts = s.split('.');
-  final b = StringBuffer();
-  final d = parts[0];
-  for (var i = 0; i < d.length; i++) {
-    if (i > 0 && (d.length - i) % 3 == 0) b.write('.');
-    b.write(d[i]);
-  }
-  return parts.length > 1 ? '$b,${parts[1]}' : b.toString();
-}
-
-/// 1.250.000 -> "Rp 1,25 jt", 300.000 -> "Rp 300 rb"
-String _rpRingkas(num v) {
-  if (v >= 1000000) {
-    final x = (v / 1000000).toStringAsFixed(2).replaceAll(RegExp(r'\.?0+$'), '');
-    return 'Rp ${x.replaceAll('.', ',')} jt';
-  }
-  if (v >= 1000) {
-    final x = (v / 1000).toStringAsFixed(1).replaceAll(RegExp(r'\.?0+$'), '');
-    return 'Rp ${x.replaceAll('.', ',')} rb';
-  }
-  return 'Rp ${_angka(v)}';
-}
 
 class _PeranInfo {
   final String label;
@@ -150,8 +113,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!mounted) return;
       setState(() {
         _totalTransaksi = (meta['total'] as num).toInt();
-        _totalLiter = ((meta['total_liter'] ?? 0) as num).toDouble();
-        _totalRp = ((meta['total_jumlah'] ?? 0) as num).toDouble();
+        _totalLiter = asDouble(meta['total_liter']);
+        _totalRp = asDouble(meta['total_jumlah']);
         if (data.isNotEmpty) {
           _terakhirTanggal = data.first['tanggal'] as String?;
           _terakhirPlat = data.first['plat_nomor'] as String?;
@@ -425,10 +388,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 'Transaksi', PlnColors.primaryBlue),
             const SizedBox(width: 10),
             _statMini(Icons.local_gas_station_outlined,
-                '${_angka(_totalLiter, desimal: 1)} L', 'Total BBM',
+                '${formatLiter(_totalLiter)} L', 'Total BBM',
                 PlnColors.success),
             const SizedBox(width: 10),
-            _statMini(Icons.payments_outlined, _rpRingkas(_totalRp),
+            _statMini(Icons.payments_outlined, fmtRpRingkas(_totalRp),
                 'Pengeluaran', PlnColors.warning),
           ],
         ),
@@ -446,7 +409,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Terakhir mengisi ${_tgl(_terakhirTanggal!)}'
+                    'Terakhir mengisi ${fmtTgl(_terakhirTanggal!)}'
                     '${_terakhirPlat != null ? ' • $_terakhirPlat' : ''}',
                     style: _poppins(
                         12, FontWeight.w500, PlnColors.textPrimary),

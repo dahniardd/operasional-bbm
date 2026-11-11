@@ -7,61 +7,13 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../config/pln_colors.dart';
 import '../../services/api_service.dart';
+import '../../utils/display_format.dart';
+import '../../utils/formatters.dart'; // <- sesuaikan dengan nama file util format yang sudah ada
 import 'profile_screen.dart';
 
 // ============================================================
 // Helper format
 // ============================================================
-
-const _bulan = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-  'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
-];
-
-String _rp(num v) {
-  final s = v.round().abs().toString();
-  final b = StringBuffer();
-  for (var i = 0; i < s.length; i++) {
-    if (i > 0 && (s.length - i) % 3 == 0) b.write('.');
-    b.write(s[i]);
-  }
-  return '${v < 0 ? '-' : ''}Rp $b';
-}
-
-/// 34886 -> '34.886,00'. Dua desimal dan pemisah ribuan, dipakai di mana pun.
-String _liter(num v) {
-  final parts = v.abs().toStringAsFixed(2).split('.');
-  final s = parts[0];
-  final b = StringBuffer();
-  for (var i = 0; i < s.length; i++) {
-    if (i > 0 && (s.length - i) % 3 == 0) b.write('.');
-    b.write(s[i]);
-  }
-  return '${v < 0 ? '-' : ''}$b,${parts[1]}';
-}
-
-/// '2026-09-14' -> '14 Sep 2026'
-/// Aman terhadap nilai kosong (null) dari API: tampil '-'.
-String _tgl(dynamic value) {
-  final raw = (value ?? '').toString();
-  if (raw.isEmpty) return '-';
-  final iso = raw.length >= 10 ? raw.substring(0, 10) : raw;
-  final p = iso.split('-');
-  if (p.length != 3) return raw;
-  final m = int.tryParse(p[1]) ?? 0;
-  if (m < 1 || m > 12) return raw;
-  return '${int.tryParse(p[2]) ?? p[2]} ${_bulan[m - 1]} ${p[0]}';
-}
-
-/// 'luar_paiton' -> 'Luar Paiton'. Nilai kosong (null) tampil '-'.
-String _title(dynamic value) {
-  final s = (value ?? '').toString();
-  if (s.isEmpty) return '-';
-  return s
-      .split('_')
-      .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
-      .join(' ');
-}
 
 String _errorMessage(Object e) {
   if (e is DioException) {
@@ -284,8 +236,8 @@ class _PemakaianListState extends State<_PemakaianList>
         _page = page;
         _lastPage = (meta['last_page'] as num).toInt();
         _total = (meta['total'] as num).toInt();
-        _totalRp = ((meta['total_jumlah'] ?? 0) as num).toDouble();
-        _totalLiter = ((meta['total_liter'] ?? 0) as num).toDouble();
+        _totalRp = asDouble(meta['total_jumlah']);
+        _totalLiter = asDouble(meta['total_liter']);
         _loading = false;
         _error = null;
       });
@@ -330,8 +282,8 @@ class _PemakaianListState extends State<_PemakaianList>
         title: Text('Hapus Transaksi',
             style: _poppins(16, FontWeight.w700, PlnColors.textPrimary)),
         content: Text(
-          'Pemakaian ${m['plat_nomor']} tanggal ${_tgl(m['tanggal'])} '
-          '(${_rp(m['jumlah'] as num)}) akan dihapus dan tidak bisa dikembalikan.',
+          'Pemakaian ${m['plat_nomor']} tanggal ${fmtTgl(m['tanggal'])} '
+          '(${formatRupiah(asDouble(m['jumlah']))}) akan dihapus dan tidak bisa dikembalikan.',
           style: _poppins(13, FontWeight.w400, PlnColors.textSecondary),
         ),
         actions: [
@@ -361,9 +313,9 @@ class _PemakaianListState extends State<_PemakaianList>
   }
 
   void _detail(Map<String, dynamic> m) {
-    final liter = (m['liter'] as num).toDouble();
-    final rp = (m['rp'] as num).toDouble();
-    final jumlah = (m['jumlah'] as num).toDouble();
+    final liter = asDouble(m['liter']);
+    final rp = asDouble(m['rp']);
+    final jumlah = asDouble(m['jumlah']);
     final paiton = m['lokasi_pembelian'] == 'paiton';
     final pencatat = (m['pencatat'] ?? '-').toString();
     final fotoUrl = (m['bukti_bbm_url'] ?? '').toString();
@@ -512,7 +464,7 @@ class _PemakaianListState extends State<_PemakaianList>
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
-                                  _title(m['lokasi_pembelian']),
+                                  fmtTitle(m['lokasi_pembelian']),
                                   style: _poppins(12,
                                       FontWeight.w600,
                                       paiton
@@ -572,7 +524,7 @@ class _PemakaianListState extends State<_PemakaianList>
                               FontWeight.w500,
                               Colors.white.withValues(alpha: 0.8))),
                       const SizedBox(height: 4),
-                      Text(_rp(jumlah),
+                      Text(formatRupiah(jumlah),
                           style: _poppins(28, FontWeight.w800, Colors.white,
                               ls: -0.6)),
                       const SizedBox(height: 14),
@@ -581,11 +533,11 @@ class _PemakaianListState extends State<_PemakaianList>
                         runSpacing: 8,
                         children: [
                           chipGelap(Icons.calendar_today_outlined,
-                              _tgl(m['tanggal'])),
+                              fmtTgl(m['tanggal'])),
                           chipGelap(Icons.local_gas_station_outlined,
-                              '${_liter(liter)} L'),
+                              '${formatLiter(liter)} L'),
                           chipGelap(Icons.opacity_outlined,
-                              _title(m['jenis_bbm'])),
+                              fmtTitle(m['jenis_bbm'])),
                         ],
                       ),
                     ],
@@ -596,15 +548,15 @@ class _PemakaianListState extends State<_PemakaianList>
                 // Informasi pembelian
                 kartu('Informasi Pembelian', [
                   baris(Icons.local_gas_station_outlined, 'Jenis BBM',
-                      _title(m['jenis_bbm'])),
+                      fmtTitle(m['jenis_bbm'])),
                   baris(Icons.place_outlined, 'Lokasi pembelian',
-                      _title(m['lokasi_pembelian'])),
+                      fmtTitle(m['lokasi_pembelian'])),
                   baris(Icons.water_drop_outlined, 'Volume',
-                      '${_liter(liter)} L'),
+                      '${formatLiter(liter)} L'),
                   if (liter > 0)
                     baris(Icons.speed_outlined, 'Rata-rata per liter',
-                        _rp(rp / liter)),
-                  baris(Icons.receipt_long_outlined, 'Biaya BBM', _rp(rp),
+                        formatRupiah(rp / liter)),
+                  baris(Icons.receipt_long_outlined, 'Biaya BBM', formatRupiah(rp),
                       warnaNilai: PlnColors.primaryBlue),
                 ]),
                 const SizedBox(height: 12),
@@ -881,7 +833,7 @@ class _PemakaianListState extends State<_PemakaianList>
               Expanded(
                 child: _Ringkas(
                   label: 'Total Pengeluaran',
-                  value: _loading ? '—' : _rp(_totalRp),
+                  value: _loading ? '—' : formatRupiah(_totalRp),
                   note: _loading ? '' : '$_total transaksi',
                   icon: Icons.attach_money,
                   warna: PlnColors.primaryBlue,
@@ -892,7 +844,7 @@ class _PemakaianListState extends State<_PemakaianList>
               Expanded(
                 child: _Ringkas(
                   label: 'Total Liter',
-                  value: _loading ? '—' : '${_liter(_totalLiter)} L',
+                  value: _loading ? '—' : '${formatLiter(_totalLiter)} L',
                   note: _mine ? 'milik Anda' : 'hanya dilihat',
                   icon: Icons.local_gas_station,
                   warna: PlnColors.success,
@@ -1124,13 +1076,13 @@ class _Kartu extends StatelessWidget {
                               style: _poppins(
                                   14, FontWeight.w600, PlnColors.textPrimary)),
                           const SizedBox(height: 2),
-                          Text(_tgl(m['tanggal']),
+                          Text(fmtTgl(m['tanggal']),
                               style: _poppins(12, FontWeight.w400,
                                   PlnColors.textSecondary)),
                         ],
                       ),
                     ),
-                    Text(_rp(m['jumlah'] as num),
+                    Text(formatRupiah(asDouble(m['jumlah'])),
                         style: _poppins(
                             14, FontWeight.w700, PlnColors.primaryBlue)),
                   ],
@@ -1140,14 +1092,14 @@ class _Kartu extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 6,
                   children: [
-                    _chip(_title(m['jenis_bbm']), PlnColors.primaryBlue,
+                    _chip(fmtTitle(m['jenis_bbm']), PlnColors.primaryBlue,
                         _bgBiru),
                     _chip(
-                      _title(m['lokasi_pembelian']),
+                      fmtTitle(m['lokasi_pembelian']),
                       paiton ? PlnColors.success : PlnColors.warning,
                       paiton ? _bgHijau : _bgKuning,
                     ),
-                    _chip('${_liter(m['liter'] as num)} L',
+                    _chip('${formatLiter(asDouble(m['liter']))} L',
                         PlnColors.textSecondary, PlnColors.background),
                     if (adaFoto) _chipFoto(),
                   ],
