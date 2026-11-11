@@ -39,6 +39,15 @@ const _bgBiru = Color(0xFFE8F4FF);
 const _bgHijau = Color(0xFFE8F9F5);
 const _bgKuning = Color(0xFFFEF3E2);
 
+// Warna teks untuk chip/kartu berlatar pastel. Warna status bawaan
+// (success/warning/textSecondary) terlalu terang di atas latar ini:
+//   success   di atas _bgHijau  = 3,03:1 -> _fgHijau  = 4,61:1
+//   warning   di atas _bgKuning = 1,96:1 -> _fgKuning = 4,58:1
+//   textSecondary di atas _bgBiru = 4,26:1 -> _fgAbu  = di atas 7:1
+const _fgHijau = Color(0xFF15803D);
+const _fgKuning = Color(0xFFB45309);
+const _fgAbu = Color(0xFF475569);
+
 // ============================================================
 // Halaman Riwayat: dua slide (Saya / Driver lain)
 // ============================================================
@@ -467,9 +476,7 @@ class _PemakaianListState extends State<_PemakaianList>
                                   fmtTitle(m['lokasi_pembelian']),
                                   style: _poppins(12,
                                       FontWeight.w600,
-                                      paiton
-                                          ? PlnColors.success
-                                          : PlnColors.warning),
+                                      paiton ? _fgHijau : _fgKuning),
                                 ),
                               ),
                             ],
@@ -848,6 +855,7 @@ class _PemakaianListState extends State<_PemakaianList>
                   note: _mine ? 'milik Anda' : 'hanya dilihat',
                   icon: Icons.local_gas_station,
                   warna: PlnColors.success,
+                  teks: _fgHijau,
                   latar: _bgHijau,
                 ),
               ),
@@ -940,6 +948,9 @@ class _Ringkas extends StatelessWidget {
   final String label, value, note;
   final IconData icon;
   final Color warna, latar;
+
+  /// Warna teks catatan; kalau kosong memakai [warna].
+  final Color? teks;
   const _Ringkas({
     required this.label,
     required this.value,
@@ -947,6 +958,7 @@ class _Ringkas extends StatelessWidget {
     required this.icon,
     required this.warna,
     required this.latar,
+    this.teks,
   });
 
   @override
@@ -969,8 +981,7 @@ class _Ringkas extends StatelessWidget {
             child: Icon(icon, size: 18, color: warna),
           ),
           const SizedBox(height: 10),
-          Text(label,
-              style: _poppins(12, FontWeight.w500, PlnColors.textSecondary)),
+          Text(label, style: _poppins(12, FontWeight.w500, _fgAbu)),
           const SizedBox(height: 2),
           FittedBox(
             fit: BoxFit.scaleDown,
@@ -981,7 +992,7 @@ class _Ringkas extends StatelessWidget {
           ),
           if (note.isNotEmpty) ...[
             const SizedBox(height: 2),
-            Text(note, style: _poppins(12, FontWeight.w500, warna)),
+            Text(note, style: _poppins(12, FontWeight.w500, teks ?? warna)),
           ],
         ],
       ),
@@ -1096,11 +1107,11 @@ class _Kartu extends StatelessWidget {
                         _bgBiru),
                     _chip(
                       fmtTitle(m['lokasi_pembelian']),
-                      paiton ? PlnColors.success : PlnColors.warning,
+                      paiton ? _fgHijau : _fgKuning,
                       paiton ? _bgHijau : _bgKuning,
                     ),
                     _chip('${formatLiter(asDouble(m['liter']))} L',
-                        PlnColors.textSecondary, PlnColors.background),
+                        _fgAbu, PlnColors.background),
                     if (adaFoto) _chipFoto(),
                   ],
                 ),
