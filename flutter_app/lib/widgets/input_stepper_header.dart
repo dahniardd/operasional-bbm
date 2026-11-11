@@ -91,7 +91,7 @@ class InputStepperHeader extends StatelessWidget {
               SafeArea(
                 bottom: false,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
                   child: Column(
                     children: [
                       // Satu baris: back + judul ... profil (kanan)
@@ -100,7 +100,8 @@ class InputStepperHeader extends StatelessWidget {
                           _HeaderButton(
                             icon: Icons.arrow_back_rounded,
                             tooltip: 'Kembali',
-                            onTap: onBack ??
+                            onTap:
+                                onBack ??
                                 () => Navigator.of(context).maybePop(),
                           ),
                           const SizedBox(width: 12),
@@ -114,8 +115,11 @@ class InputStepperHeader extends StatelessWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: _poppins(
-                                      18, FontWeight.w700, Colors.white,
-                                      ls: -0.4),
+                                    18,
+                                    FontWeight.w700,
+                                    Colors.white,
+                                    ls: -0.4,
+                                  ),
                                 ),
                                 if (subtitle != null &&
                                     subtitle!.isNotEmpty) ...[
@@ -125,9 +129,10 @@ class InputStepperHeader extends StatelessWidget {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: _poppins(
-                                        11,
-                                        FontWeight.w400,
-                                        Colors.white.withValues(alpha: 0.7)),
+                                      11,
+                                      FontWeight.w400,
+                                      Colors.white.withValues(alpha: 0.7),
+                                    ),
                                   ),
                                 ],
                               ],
@@ -175,9 +180,7 @@ class InputStepperHeader extends StatelessWidget {
                       height: 2,
                       color: Colors.white.withValues(alpha: 0.9),
                     )
-                  : _DashedLine(
-                      color: Colors.white.withValues(alpha: 0.35),
-                    ),
+                  : _DashedLine(color: Colors.white.withValues(alpha: 0.35)),
             ),
           );
         }
@@ -195,22 +198,21 @@ class InputStepperHeader extends StatelessWidget {
                 color: isCompleted
                     ? Colors.white
                     : (isActive
-                        ? PlnColors.accentYellow
-                        : Colors.white.withValues(alpha: 0.12)),
+                          ? PlnColors.accentYellow
+                          : Colors.white.withValues(alpha: 0.12)),
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: isCompleted
                       ? Colors.white
                       : (isActive
-                          ? PlnColors.accentYellow
-                          : Colors.white.withValues(alpha: 0.35)),
+                            ? PlnColors.accentYellow
+                            : Colors.white.withValues(alpha: 0.35)),
                   width: 1.4,
                 ),
               ),
               child: Center(
                 child: isCompleted
-                    ? Icon(Icons.check,
-                        size: 14, color: PlnColors.primaryBlue)
+                    ? Icon(Icons.check, size: 14, color: PlnColors.primaryBlue)
                     : Text(
                         '${stepIdx + 1}',
                         style: _poppins(
@@ -261,13 +263,14 @@ class _HeaderButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(9),
+          borderRadius: BorderRadius.circular(12),
           child: Container(
-            width: 34,
-            height: 34,
+            width: 48,
+            height: 48,
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(9),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: Colors.white.withValues(alpha: 0.18),
                 width: 1,
@@ -276,7 +279,7 @@ class _HeaderButton extends StatelessWidget {
             child: Icon(
               icon,
               color: Colors.white.withValues(alpha: 0.9),
-              size: 18,
+              size: 20,
             ),
           ),
         ),
@@ -296,8 +299,8 @@ class _DashedLine extends StatelessWidget {
       builder: (context, constraints) {
         const dashWidth = 4.0;
         const dashSpace = 4.0;
-        final dashCount =
-            (constraints.maxWidth / (dashWidth + dashSpace)).floor();
+        final dashCount = (constraints.maxWidth / (dashWidth + dashSpace))
+            .floor();
 
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,

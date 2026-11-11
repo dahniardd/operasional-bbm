@@ -4,7 +4,6 @@ import '../config/app_colors.dart';
 import '../widgets/custom_bottom_nav.dart';
 import 'main/dashboard_page_advanced.dart' show DashboardPageAdvanced;
 import 'main/history_page.dart';
-import 'main/input_page.dart';
 import 'input_bbm/input_bbm_screen.dart';
 
 class MainShell extends StatefulWidget {
@@ -19,6 +18,8 @@ class _MainShellState extends State<MainShell> {
   static const int _tabHistory = 2;
 
   int _currentIndex = _tabDashboard;
+
+  int get _stackIndex => _currentIndex == _tabHistory ? 1 : 0;
 
   /// Naik setiap kali Riwayat perlu dimuat ulang (buka tab, atau selesai input).
   int _historyTick = 0;
@@ -46,10 +47,9 @@ class _MainShellState extends State<MainShell> {
       extendBody: true,
       backgroundColor: AppColors.background,
       body: IndexedStack(
-        index: _currentIndex,
+        index: _stackIndex,
         children: [
           DashboardPageAdvanced(onOpenHistory: _openHistory),
-          const InputPage(),
           HistoryPage(refreshTick: _historyTick),
         ],
       ),

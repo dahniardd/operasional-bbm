@@ -79,11 +79,7 @@ class CustomBottomNav extends StatelessWidget {
             left: 0,
             right: 0,
             child: Center(
-              child: _CenterButton(
-                size: _buttonSize,
-                active: currentIndex == 1,
-                onTap: () => onTap(1),
-              ),
+              child: _CenterButton(size: _buttonSize, onTap: () => onTap(1)),
             ),
           ),
         ],
@@ -235,57 +231,47 @@ class _NavPill extends StatelessWidget {
 }
 
 class _CenterButton extends StatelessWidget {
-  const _CenterButton({
-    required this.size,
-    required this.active,
-    required this.onTap,
-  });
+  const _CenterButton({required this.size, required this.onTap});
 
   final double size;
-  final bool active;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      selected: active,
+      selected: false,
       label: 'Input',
-      child: AnimatedScale(
-        scale: active ? 1.06 : 1.0,
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutBack,
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.40),
-                blurRadius: 24,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Material(
-            color: AppColors.primary,
-            shape: CircleBorder(
-              side: BorderSide(
-                color: AppColors.white.withValues(alpha: 0.95),
-                width: 5,
-              ),
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.40),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
             ),
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: onTap,
-              customBorder: const CircleBorder(),
-              child: const Center(
-                child: Icon(
-                  Icons.local_gas_station_rounded,
-                  color: AppColors.white,
-                  size: 32,
-                ),
+          ],
+        ),
+        child: Material(
+          color: AppColors.primary,
+          shape: CircleBorder(
+            side: BorderSide(
+              color: AppColors.white.withValues(alpha: 0.95),
+              width: 5,
+            ),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            customBorder: const CircleBorder(),
+            child: const Center(
+              child: Icon(
+                Icons.local_gas_station_rounded,
+                color: AppColors.white,
+                size: 32,
               ),
             ),
           ),

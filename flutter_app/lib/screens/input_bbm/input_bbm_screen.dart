@@ -99,8 +99,32 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
     return _liter * _hargaPerLiter;
   }
 
+  static const double _totalMaks = 50000000;
+
+  String? get _totalError {
+    final total = parseAngka(_totalController.text);
+
+    if (total == null || total <= 0) {
+      return null;
+    }
+
+    if (_hargaPerLiter > 0 && total < _hargaPerLiter) {
+      return 'Minimal pembelian 1 liter (${formatRupiah(_hargaPerLiter)}).';
+    }
+
+    if (total > _totalMaks) {
+      return 'Total harga terlalu besar. Maksimal ${formatRupiah(_totalMaks)}.';
+    }
+
+    return null;
+  }
+
   bool get _canSubmit =>
-      _kendaraanId != null && _hargaPerLiter > 0 && _liter > 0 && _total > 0;
+      _kendaraanId != null &&
+      _hargaPerLiter > 0 &&
+      _liter > 0 &&
+      _total > 0 &&
+      _totalError == null;
 
   Future<void> _pickTanggal() async {
     final picked = await showDatePicker(
@@ -238,8 +262,7 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
 
       setState(() {
         _fotoBytes = bytes;
-        _fotoName =
-            picked.name.isEmpty ? 'bukti_bbm.jpg' : picked.name;
+        _fotoName = picked.name.isEmpty ? 'bukti_bbm.jpg' : picked.name;
       });
     } catch (_) {
       if (mounted) {
@@ -262,11 +285,11 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_canSubmit) {
+    final provider = context.read<PemakaianBbmProvider>();
+
+    if (provider.isSubmitting || !_canSubmit) {
       return;
     }
-
-    final provider = context.read<PemakaianBbmProvider>();
 
     final payload = {
       'tanggal': formatTanggalIso(_tanggal),
@@ -288,10 +311,7 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
       );
     }
 
-    final success = await provider.savePemakaian(
-      payload,
-      buktiBbm: buktiBbm,
-    );
+    final success = await provider.savePemakaian(payload, buktiBbm: buktiBbm);
 
     if (!mounted) {
       return;
@@ -405,8 +425,7 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color:
-                                PlnColors.primaryBlue.withValues(alpha: 0.3),
+                            color: PlnColors.primaryBlue.withValues(alpha: 0.3),
                             blurRadius: 12,
                             offset: const Offset(0, 6),
                           ),
@@ -596,9 +615,7 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                             child: TextFormField(
                               controller: _totalController,
                               keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                RupiahInputFormatter(),
-                              ],
+                              inputFormatters: [RupiahInputFormatter()],
                               decoration: const InputDecoration(
                                 labelText: 'Total Harga (Rp)',
                                 hintText: '0',
@@ -611,6 +628,29 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                           ),
                         ],
                       ),
+                      if (_totalError != null) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              size: 14,
+                              color: AppColors.danger,
+                            ),
+                            const SizedBox(width: 5),
+                            Expanded(
+                              child: Text(
+                                _totalError!,
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: AppColors.danger,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                       const SizedBox(height: 8),
                       Row(
                         children: [
@@ -630,6 +670,28 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 6),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 14,
+                            color: AppColors.slateBlue.withValues(alpha: 0.7),
+                          ),
+                          const SizedBox(width: 5),
+                          Expanded(
+                            child: Text(
+                              'Liter dihitung otomatis dari Total Harga '
+                              'dibagi Harga per Liter.',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: AppColors.slateBlue,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -641,16 +703,19 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
-                      onPressed:
-                          provider.isSubmitting || !_canSubmit ? null : _submit,
+                      onPressed: provider.isSubmitting || !_canSubmit
+                          ? null
+                          : _submit,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.success,
-                        disabledBackgroundColor:
-                            AppColors.slateBlue.withValues(alpha: 0.3),
+                        backgroundColor: PlnColors.primaryBlue,
+                        disabledBackgroundColor: AppColors.slateBlue.withValues(
+                          alpha: 0.3,
+                        ),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppTheme.radiusMd),
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.radiusMd,
+                          ),
                         ),
                       ),
                       child: provider.isSubmitting
@@ -684,7 +749,8 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                             ),
                     ),
                   ),
-                  if (_kendaraanId != null && (harga == null || harga <= 0)) ...[
+                  if (_kendaraanId != null &&
+                      (harga == null || harga <= 0)) ...[
                     const SizedBox(height: 10),
                     Center(
                       child: Text(
@@ -729,10 +795,7 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
       children: [
         Text(
           'Opsional. Lampirkan foto struk atau bukti pengisian BBM.',
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            color: AppColors.slateBlue,
-          ),
+          style: GoogleFonts.inter(fontSize: 12, color: AppColors.slateBlue),
         ),
         const SizedBox(height: 12),
         if (!hasFoto)
@@ -999,14 +1062,8 @@ class _LokasiPembelianOption extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       fontSize: 13,
-                      fontWeight:
-                          selected ? FontWeight.w800 : FontWeight.w600,
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                       color: foreground,
-                      decoration: selected
-                          ? TextDecoration.none
-                          : TextDecoration.lineThrough,
-                      decorationColor: AppColors.slateBlue,
-                      decorationThickness: 1.5,
                     ),
                   ),
                 ),
@@ -1065,9 +1122,7 @@ class _HargaPerLiterBox extends StatelessWidget {
                   'Harga per Liter',
                   style: TextStyle(
                     fontSize: 11,
-                    color: available
-                        ? AppColors.slateBlue
-                        : AppColors.danger,
+                    color: available ? AppColors.slateBlue : AppColors.danger,
                   ),
                 ),
                 const SizedBox(height: 2),
