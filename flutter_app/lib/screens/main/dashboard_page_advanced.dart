@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../../config/app_theme.dart';
+import '../../config/design_tokens.dart';
 import '../../models/pemakaian_bbm.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/pemakaian_bbm_provider.dart';
@@ -17,6 +17,7 @@ import '../../widgets/advanced_header.dart';
 import '../../widgets/advanced_quick_action.dart';
 import '../../widgets/advanced_chart_widget.dart';
 import '../../widgets/advanced_transaction_card.dart';
+import '../../widgets/dashboard_skeleton.dart';
 import '../input_bbm/input_bbm_screen.dart';
 import 'profile_screen.dart';
 
@@ -98,8 +99,9 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
         'totalVehicles': asDouble(d['total_vehicles']).toInt(),
       };
       _recent = (d['recent'] as List)
-          .map((e) =>
-              PemakaianBbm.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map(
+            (e) => PemakaianBbm.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
           .toList();
       return null;
     } on DioException catch (e) {
@@ -130,7 +132,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
         SnackBar(
           content: Text('Gagal memuat data: $error'),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: AppColors.danger,
+          backgroundColor: AppTokens.danger,
           margin: const EdgeInsets.all(16),
         ),
       );
@@ -153,24 +155,24 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Container(
-        color: AppColors.background,
+        color: AppTokens.background,
         child: Column(
           children: [
             AdvancedHeader(
               user: context.watch<AuthProvider>().user,
-              onProfileTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ProfileScreen()),
-              ),
+              onProfileTap: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const ProfileScreen())),
             ),
             Expanded(
               child: _isLoading
-                  ? _buildLoadingState()
+                  ? const DashboardSkeleton()
                   : FadeTransition(
                       opacity: _fadeAnimation,
                       child: RefreshIndicator(
                         onRefresh: () => _loadDashboardData(silent: true),
-                        color: AppColors.primary,
-                        backgroundColor: Colors.white,
+                        color: AppTokens.brand,
+                        backgroundColor: AppTokens.surface,
                         child: MediaQuery.removePadding(
                           context: context,
                           removeTop: true,
@@ -179,24 +181,40 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                             physics: const AlwaysScrollableScrollPhysics(),
                             slivers: [
                               SliverToBoxAdapter(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(height: 12),
-                                    // Stats Section
-                                    _buildStatsSection(stats),
-                                    const SizedBox(height: 16),
-                                    // Quick Actions Section
-                                    _buildQuickActionsSection(),
-                                    const SizedBox(height: 16),
-                                    // Chart Section
-                                    _buildChartSection(),
-                                    const SizedBox(height: 16),
-                                    // Recent Transactions Section
-                                    _buildRecentTransactionsSection(recent),
-                                    // Ruang bawah agar tidak tertutup bottom nav.
-                                    const SizedBox(height: 120),
-                                  ],
+                                child: Center(
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: AppTokens.contentMaxWidth,
+                                    ),
+                                    child: SizedBox(
+                                      width: double.infinity,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const SizedBox(
+                                            height: AppTokens.space12,
+                                          ),
+                                          _buildStatsSection(stats),
+                                          const SizedBox(
+                                            height: AppTokens.space16,
+                                          ),
+                                          _buildQuickActionsSection(),
+                                          const SizedBox(
+                                            height: AppTokens.space16,
+                                          ),
+                                          _buildChartSection(),
+                                          const SizedBox(
+                                            height: AppTokens.space16,
+                                          ),
+                                          _buildRecentTransactionsSection(
+                                            recent,
+                                          ),
+                                          const SizedBox(height: 120),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
@@ -211,108 +229,77 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
     );
   }
 
-  Widget _buildLoadingState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.primary, AppColors.darkNavy],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                strokeWidth: 3,
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Memuat Dashboard Advance...',
-            style: GoogleFonts.poppins(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildStatsSection(Map<String, dynamic> stats) {
+    final textScale = MediaQuery.textScalerOf(
+      context,
+    ).scale(1).clamp(1.0, 2.0).toDouble();
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: AppTokens.space20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Ringkasan Hari Ini',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                      letterSpacing: -0.3,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Ringkasan Hari Ini',
+                      style: GoogleFonts.poppins(
+                        fontSize: AppTokens.fontTitle,
+                        fontWeight: FontWeight.w700,
+                        color: AppTokens.textPrimary,
+                        letterSpacing: -0.3,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Pemakaian BBM seluruh driver',
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w400,
-                      color: AppColors.textSecondary,
+                    const SizedBox(height: AppTokens.space2),
+                    Text(
+                      'Pemakaian BBM seluruh driver',
+                      style: GoogleFonts.poppins(
+                        fontSize: AppTokens.fontCaption,
+                        fontWeight: FontWeight.w400,
+                        color: AppTokens.textSecondary,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: AppTokens.space8),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                  horizontal: AppTokens.space10,
+                  vertical: AppTokens.space6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppTokens.brand.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppTokens.radiusSm),
                   border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.2),
+                    color: AppTokens.brand.withValues(alpha: 0.2),
                     width: 1,
                   ),
                 ),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.calendar_today,
-                      size: 12,
-                      color: AppColors.primary,
+                      size: AppTokens.fontCaption,
+                      color: AppTokens.brand,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: AppTokens.space4),
                     Text(
                       DateFormat('d MMM', 'id_ID').format(DateTime.now()),
                       style: GoogleFonts.poppins(
-                        fontSize: 11,
+                        fontSize: AppTokens.fontCaption,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
+                        color: AppTokens.brand,
                       ),
                     ),
                   ],
@@ -320,58 +307,67 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          GridView.count(
-            padding: EdgeInsets.zero,
-            crossAxisCount: 2,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: 1.5,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            children: [
-              AdvancedStatCard(
-                label: 'Total Pengeluaran',
-                value: NumberFormat.currency(
-                  locale: 'id_ID',
-                  symbol: 'Rp ',
-                  decimalDigits: 0,
-                ).format(stats['todayTotal'] ?? 0),
-                icon: Icons.attach_money,
-                primaryColor: AppColors.primary,
-                backgroundColor: AppColors.primarySoft,
-              ),
-              AdvancedStatCard(
-                label: 'Total Liter',
-                value:
-                    '${(stats['todayLiter'] as double? ?? 0).toStringAsFixed(1)} L',
-                icon: Icons.local_gas_station,
-                primaryColor: AppColors.success,
-                backgroundColor: AppColors.successSoft,
-              ),
-              AdvancedStatCard(
-                label: 'Bulan Ini',
-                value: NumberFormat.currency(
-                  locale: 'id_ID',
-                  symbol: 'Rp ',
-                  decimalDigits: 0,
-                ).format(stats['monthTotal'] ?? 0),
-                subtitle: '${(stats['monthCount'] ?? 0)} transaksi',
-                icon: Icons.receipt_long,
-                primaryColor: AppColors.accentYellow,
-                backgroundColor: AppColors.warningSoft,
-                change: stats['percentageChange'] as double?,
-                isPositive: (stats['percentageChange'] as double? ?? 0) >= 0,
-              ),
-              AdvancedStatCard(
-                label: 'Kendaraan Aktif',
-                value: '${stats['totalVehicles'] ?? 0} Unit',
-                subtitle: 'tersedia',
-                icon: Icons.directions_car,
-                primaryColor: AppColors.primary,
-                backgroundColor: AppColors.primarySoft,
-              ),
-            ],
+          const SizedBox(height: AppTokens.space10),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final columns = constraints.maxWidth >= 680 ? 4 : 2;
+              return GridView.count(
+                padding: EdgeInsets.zero,
+                crossAxisCount: columns,
+                mainAxisSpacing: AppTokens.space10,
+                crossAxisSpacing: AppTokens.space10,
+                mainAxisExtent: 136 * textScale,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  AdvancedStatCard(
+                    label: 'Pengeluaran Hari Ini',
+                    value: NumberFormat.currency(
+                      locale: 'id_ID',
+                      symbol: 'Rp ',
+                      decimalDigits: 0,
+                    ).format(stats['todayTotal'] ?? 0),
+                    icon: Icons.attach_money,
+                    primaryColor: AppTokens.brand,
+                    backgroundColor: const Color(0xFFE8F4FF),
+                  ),
+                  AdvancedStatCard(
+                    label: 'Liter Hari Ini',
+                    value:
+                        '${(stats['todayLiter'] as double? ?? 0).toStringAsFixed(1)} L',
+                    icon: Icons.local_gas_station,
+                    primaryColor: AppTokens.success,
+                    backgroundColor: const Color(0xFFE8F9F5),
+                  ),
+                  AdvancedStatCard(
+                    label: 'Pengeluaran Bulan Ini',
+                    value: NumberFormat.currency(
+                      locale: 'id_ID',
+                      symbol: 'Rp ',
+                      decimalDigits: 0,
+                    ).format(stats['monthTotal'] ?? 0),
+                    subtitle: '${(stats['monthCount'] ?? 0)} transaksi',
+                    icon: Icons.receipt_long,
+                    primaryColor: AppTokens.accent,
+                    valueColor: AppTokens.warningText,
+                    backgroundColor: const Color(0xFFFEF3E2),
+                    change: stats['percentageChange'] as double?,
+                    isPositive:
+                        (stats['percentageChange'] as double? ?? 0) >= 0,
+                    positiveIsGood: false,
+                    badTrendColor: AppTokens.warning,
+                  ),
+                  AdvancedStatCard(
+                    label: 'Kendaraan Aktif',
+                    value: '${stats['totalVehicles'] ?? 0} Unit',
+                    subtitle: 'tersedia',
+                    icon: Icons.directions_car,
+                    primaryColor: AppTokens.brand,
+                    backgroundColor: const Color(0xFFE8F4FF),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -379,27 +375,31 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
   }
 
   Widget _buildQuickActionsSection() {
+    final textScale = MediaQuery.textScalerOf(
+      context,
+    ).scale(1).clamp(1.0, 2.0).toDouble();
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: AppTokens.space20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Aksi Cepat',
             style: GoogleFonts.poppins(
-              fontSize: 16,
+              fontSize: AppTokens.fontTitle,
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: AppTokens.textPrimary,
               letterSpacing: -0.3,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppTokens.space10),
           GridView.count(
             padding: EdgeInsets.zero,
             crossAxisCount: 2,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: 2.1,
+            mainAxisSpacing: AppTokens.space10,
+            crossAxisSpacing: AppTokens.space10,
+            mainAxisExtent: 76 * textScale,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             children: [
@@ -407,8 +407,8 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                 label: 'Catat BBM',
                 description: 'Input pemakaian baru',
                 icon: Icons.local_gas_station,
-                primaryColor: AppColors.primary,
-                backgroundColor: AppColors.primarySoft,
+                primaryColor: AppTokens.brand,
+                backgroundColor: const Color(0xFFE8F4FF),
                 isPrimary: true,
                 onTap: () {
                   Navigator.push(
@@ -421,8 +421,8 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                 label: 'Riwayat',
                 description: 'Lihat semua transaksi',
                 icon: Icons.history,
-                primaryColor: AppColors.success,
-                backgroundColor: AppColors.successSoft,
+                primaryColor: AppTokens.success,
+                backgroundColor: const Color(0xFFE8F9F5),
                 onTap: () => widget.onOpenHistory?.call(),
               ),
             ],
@@ -434,7 +434,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
 
   Widget _buildChartSection() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: AppTokens.space20),
       child: AdvancedChartWidget(
         pemakaianList: context.watch<PemakaianBbmProvider>().items,
       ),
@@ -442,52 +442,66 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
   }
 
   Widget _buildRecentTransactionsSection(
-      List<PemakaianBbm> recentTransactions) {
+    List<PemakaianBbm> recentTransactions,
+  ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: AppTokens.space20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Riwayat Pengisian',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                      letterSpacing: -0.3,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Riwayat Pengisian',
+                      style: GoogleFonts.poppins(
+                        fontSize: AppTokens.fontTitle,
+                        fontWeight: FontWeight.w700,
+                        color: AppTokens.textPrimary,
+                        letterSpacing: -0.3,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${recentTransactions.length} transaksi terakhir',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                      color: AppColors.textSecondary,
+                    const SizedBox(height: AppTokens.space2),
+                    Text(
+                      '${recentTransactions.length} transaksi terakhir',
+                      style: GoogleFonts.poppins(
+                        fontSize: AppTokens.fontCaption,
+                        fontWeight: FontWeight.w400,
+                        color: AppTokens.textSecondary,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               if (recentTransactions.isNotEmpty)
                 Material(
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: () => widget.onOpenHistory?.call(),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
+                    borderRadius: BorderRadius.circular(AppTokens.radiusSm),
+                    child: Container(
+                      constraints: const BoxConstraints(
+                        minHeight: AppTokens.minTapTarget,
+                        minWidth: AppTokens.minTapTarget,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppTokens.space12,
+                      ),
+                      alignment: Alignment.center,
                       child: Text(
                         'Lihat Semua',
                         style: GoogleFonts.poppins(
-                          fontSize: 12,
+                          fontSize: AppTokens.fontCaption,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
+                          color: AppTokens.brand,
                         ),
                       ),
                     ),
@@ -495,33 +509,39 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                 ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppTokens.space10),
           if (recentTransactions.isEmpty)
             Container(
-              padding: const EdgeInsets.all(40),
+              padding: const EdgeInsets.all(AppTokens.space24),
               decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border, width: 1),
+                color: AppTokens.surface,
+                borderRadius: BorderRadius.circular(AppTokens.radiusLg),
+                border: Border.all(color: AppTokens.border, width: 1),
               ),
               child: Column(
                 children: [
-                  Icon(Icons.inbox_outlined, size: 48, color: AppColors.border),
-                  const SizedBox(height: 12),
+                  const Icon(
+                    Icons.inbox_outlined,
+                    size: AppTokens.minTapTarget,
+                    color: AppTokens.border,
+                  ),
+                  const SizedBox(height: AppTokens.space12),
                   Text(
                     'Belum ada riwayat pengisian',
+                    textAlign: TextAlign.center,
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondary,
+                      color: AppTokens.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppTokens.space12),
                   Text(
                     'Mulai dengan catat BBM untuk melihat riwayat',
+                    textAlign: TextAlign.center,
                     style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
+                      fontSize: AppTokens.fontCaption,
+                      color: AppTokens.textSecondary,
                     ),
                   ),
                 ],
@@ -533,7 +553,8 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: recentTransactions.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 10),
+              separatorBuilder: (_, _) =>
+                  const SizedBox(height: AppTokens.space10),
               itemBuilder: (context, index) {
                 final tx = recentTransactions[index];
                 return AdvancedTransactionCard(pemakaian: tx);

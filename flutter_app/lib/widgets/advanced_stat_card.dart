@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../config/app_theme.dart';
 
-/// Advanced Stat Card dengan animasi dan glassmorphism effect
-class AdvancedStatCard extends StatefulWidget {
+import '../config/design_tokens.dart';
+
+/// Kartu ringkasan dashboard.
+///
+/// Animasi masuk ditangani oleh halaman agar tidak ada satu
+/// AnimationController per kartu.
+class AdvancedStatCard extends StatelessWidget {
   final String label;
   final String value;
   final String? subtitle;
@@ -12,6 +16,16 @@ class AdvancedStatCard extends StatefulWidget {
   final Color backgroundColor;
   final double? change;
   final bool isPositive;
+
+  /// Apakah arah positif dianggap baik. Untuk biaya, kenaikan bukan hal baik.
+  final bool positiveIsGood;
+
+  /// Warna khusus untuk nilai, mis. amber gelap pada kartu biaya.
+  final Color? valueColor;
+
+  /// Warna indikator saat tren dianggap buruk.
+  final Color badTrendColor;
+
   final VoidCallback? onTap;
 
   const AdvancedStatCard({
@@ -24,228 +38,191 @@ class AdvancedStatCard extends StatefulWidget {
     required this.backgroundColor,
     this.change,
     this.isPositive = true,
+    this.positiveIsGood = true,
+    this.valueColor,
+    this.badTrendColor = AppTokens.danger,
     this.onTap,
   });
 
   @override
-  State<AdvancedStatCard> createState() => _AdvancedStatCardState();
-}
-
-class _AdvancedStatCardState extends State<AdvancedStatCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _opacityAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-
-    _scaleAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
-
-    _opacityAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-
-    _controller.forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return ScaleTransition(
-      scale: _scaleAnimation,
-      child: FadeTransition(
-        opacity: _opacityAnimation,
-        child: GestureDetector(
-          onTap: widget.onTap,
-          child: MouseRegion(
-            cursor: widget.onTap != null
-                ? SystemMouseCursors.click
-                : SystemMouseCursors.basic,
+    final resolvedValueColor = valueColor ?? primaryColor;
+    final isGoodTrend = isPositive == positiveIsGood;
+    final trendColor = isGoodTrend ? AppTokens.success : badTrendColor;
+
+    final card = Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [backgroundColor, backgroundColor.withValues(alpha: 0.5)],
+        ),
+        borderRadius: BorderRadius.circular(AppTokens.radiusCard),
+        border: Border.all(
+          color: primaryColor.withValues(alpha: 0.15),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: primaryColor.withValues(alpha: 0.08),
+            blurRadius: AppTokens.space10,
+            offset: const Offset(0, AppTokens.space4),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -AppTokens.space14,
+            bottom: -AppTokens.space14,
             child: Container(
+              width: 64,
+              height: 64,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    widget.backgroundColor,
-                    widget.backgroundColor.withValues(alpha: 0.5),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: widget.primaryColor.withValues(alpha: 0.15),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: widget.primaryColor.withValues(alpha: 0.08),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  // Background decoration
-                  Positioned(
-                    right: -14,
-                    bottom: -14,
-                    child: Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: widget.primaryColor.withValues(alpha: 0.05),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                  // Content
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Header dengan icon dan label
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    widget.label,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w500,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    alignment: Alignment.centerLeft,
-                                    child: Text(
-                                      widget.value,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                        color: widget.primaryColor,
-                                        letterSpacing: -0.2,
-                                      ),
-                                      maxLines: 1,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: widget.primaryColor.withValues(
-                                  alpha: 0.1,
-                                ),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Icon(
-                                widget.icon,
-                                color: widget.primaryColor,
-                                size: 18,
-                              ),
-                            ),
-                          ],
-                        ),
-                        // Footer dengan subtitle atau change indicator
-                        if (widget.subtitle != null || widget.change != null)
-                          Row(
-                            children: [
-                              if (widget.change != null) ...[
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: widget.isPositive
-                                        ? AppColors.success.withValues(
-                                            alpha: 0.1,
-                                          )
-                                        : AppColors.danger.withValues(
-                                            alpha: 0.1,
-                                          ),
-                                    borderRadius: BorderRadius.circular(5),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        widget.isPositive
-                                            ? Icons.trending_up
-                                            : Icons.trending_down,
-                                        size: 12,
-                                        color: widget.isPositive
-                                            ? AppColors.success
-                                            : AppColors.danger,
-                                      ),
-                                      const SizedBox(width: 2),
-                                      Text(
-                                        '${widget.change!.toStringAsFixed(1)}%',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w600,
-                                          color: widget.isPositive
-                                              ? AppColors.success
-                                              : AppColors.danger,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                              if (widget.subtitle != null) ...[
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    widget.subtitle!,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 10,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
+                color: primaryColor.withValues(alpha: 0.05),
+                shape: BoxShape.circle,
               ),
             ),
           ),
-        ),
+          Padding(
+            padding: const EdgeInsets.all(AppTokens.space12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            label,
+                            style: GoogleFonts.poppins(
+                              fontSize: AppTokens.fontCaption,
+                              fontWeight: FontWeight.w500,
+                              color: AppTokens.textSecondary,
+                              height: 1.2,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: AppTokens.space4),
+                          Text(
+                            value,
+                            style: GoogleFonts.poppins(
+                              fontSize: AppTokens.fontTitle,
+                              fontWeight: FontWeight.w700,
+                              color: resolvedValueColor,
+                              letterSpacing: -0.2,
+                              height: 1.15,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AppTokens.space6),
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: primaryColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+                      ),
+                      child: Icon(
+                        icon,
+                        color: primaryColor,
+                        size: AppTokens.fontHeading,
+                      ),
+                    ),
+                  ],
+                ),
+                if (subtitle != null || change != null) ...[
+                  const SizedBox(height: AppTokens.space6),
+                  Row(
+                    children: [
+                      if (change != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppTokens.space6,
+                            vertical: AppTokens.space2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: trendColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(
+                              AppTokens.space6,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isPositive
+                                    ? Icons.trending_up
+                                    : Icons.trending_down,
+                                size: AppTokens.fontCaption,
+                                color: trendColor,
+                              ),
+                              const SizedBox(width: AppTokens.space2),
+                              Text(
+                                '${change!.toStringAsFixed(1)}%',
+                                style: GoogleFonts.poppins(
+                                  fontSize: AppTokens.fontCaption,
+                                  fontWeight: FontWeight.w600,
+                                  color: trendColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (change != null && subtitle != null)
+                        const SizedBox(width: AppTokens.space6),
+                      if (subtitle != null)
+                        Expanded(
+                          child: Text(
+                            subtitle!,
+                            style: GoogleFonts.poppins(
+                              fontSize: AppTokens.fontCaption,
+                              color: AppTokens.textSecondary,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final content = onTap == null
+        ? card
+        : Semantics(
+            button: true,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(AppTokens.radiusCard),
+                child: card,
+              ),
+            ),
+          );
+
+    return Semantics(
+      label: '$label: $value',
+      child: MouseRegion(
+        cursor: onTap != null
+            ? SystemMouseCursors.click
+            : SystemMouseCursors.basic,
+        child: content,
       ),
     );
   }
