@@ -177,6 +177,19 @@ class ApiService {
     );
   }
 
+  /// Ringkasan Dashboard dari server (hari ini, bulan ini, bulan lalu,
+  /// jumlah kendaraan, 5 transaksi terakhir). [scope]: 'mine' / 'others' /
+  /// kosong = semua driver.
+  Future<Response> getRingkasanPemakaian({String? scope}) {
+    return _dio.get(
+      '/pemakaian_bbm.php',
+      queryParameters: {
+        'action': 'ringkasan',
+        if (scope != null && scope.isNotEmpty) 'scope': scope,
+      },
+    );
+  }
+
   Future<Response> storePemakaianBbm(
     Map<String, dynamic> payload, {
     int? id,

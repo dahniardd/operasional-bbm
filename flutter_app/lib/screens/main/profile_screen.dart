@@ -467,8 +467,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(label,
-                        style: _poppins(
-                            11, FontWeight.w500, AppColors.textSecondary)),
+                        style: _poppins(12, FontWeight.w500, AppColors.textSecondary)),
                     const SizedBox(height: 2),
                     Text(value,
                         style: _poppins(

@@ -8,8 +8,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../config/app_theme.dart';
 import '../../services/api_service.dart';
 import '../../utils/display_format.dart';
-import '../../utils/formatters.dart';
 import '../../widgets/pln_header_shell.dart';
+import '../../utils/formatters.dart';
 import 'profile_screen.dart';
 
 // ============================================================
@@ -39,6 +39,15 @@ TextStyle _poppins(double size, FontWeight w, Color c, {double? ls}) =>
 const _bgBiru = AppColors.primarySoft;
 const _bgHijau = AppColors.successSoft;
 const _bgKuning = AppColors.warningSoft;
+
+// Warna teks untuk chip/kartu berlatar pastel. Warna status bawaan
+// (success/warning/textSecondary) terlalu terang di atas latar ini:
+//   success   di atas _bgHijau  = 3,03:1 -> _fgHijau  = 4,61:1
+//   warning   di atas _bgKuning = 1,96:1 -> _fgKuning = 4,58:1
+//   textSecondary di atas _bgBiru = 4,26:1 -> _fgAbu  = di atas 7:1
+const _fgHijau = Color(0xFF15803D);
+const _fgKuning = Color(0xFFB45309);
+const _fgAbu = Color(0xFF475569);
 
 // ============================================================
 // Halaman Riwayat: dua slide (Saya / Driver lain)
@@ -289,7 +298,7 @@ class _PemakaianListState extends State<_PemakaianList>
             style: _poppins(16, FontWeight.w700, AppColors.textPrimary)),
         content: Text(
           'Pemakaian ${m['plat_nomor']} tanggal ${fmtTgl(m['tanggal'])} '
-          '(${formatRupiah(m['jumlah'] as num)}) akan dihapus dan tidak bisa dikembalikan.',
+          '(${formatRupiah(asDouble(m['jumlah']))}) akan dihapus dan tidak bisa dikembalikan.',
           style: _poppins(13, FontWeight.w400, AppColors.textSecondary),
         ),
         actions: [
@@ -466,16 +475,14 @@ class _PemakaianListState extends State<_PemakaianList>
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 10, vertical: 3),
                                 decoration: BoxDecoration(
-                                  color: paiton ? AppColors.successSoft : AppColors.warningSoft,
+                                  color: paiton ? _bgHijau : _bgKuning,
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
                                   fmtTitle(m['lokasi_pembelian']),
                                   style: _poppins(12,
                                       FontWeight.w600,
-                                      paiton
-                                          ? AppColors.success
-                                          : AppColors.warning),
+                                      paiton ? _fgHijau : _fgKuning),
                                 ),
                               ),
                             ],
@@ -593,7 +600,7 @@ class _PemakaianListState extends State<_PemakaianList>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Dicatat oleh',
-                              style: _poppins(10, FontWeight.w400,
+                              style: _poppins(12, FontWeight.w400,
                                   AppColors.textSecondary)),
                           Text(
                             _mine ? '$pencatat (Anda)' : pencatat,
@@ -739,7 +746,7 @@ class _PemakaianListState extends State<_PemakaianList>
       child: Column(
         children: [
           Text('Menampilkan $dari–$sampai dari $_total transaksi',
-              style: _poppins(11, FontWeight.w500, AppColors.textSecondary)),
+              style: _poppins(12, FontWeight.w500, AppColors.textSecondary)),
           const SizedBox(height: 4),
           Text('Halaman $_page dari $_lastPage',
               style: _poppins(12, FontWeight.w700, AppColors.textPrimary)),
@@ -792,8 +799,8 @@ class _PemakaianListState extends State<_PemakaianList>
             width: double.infinity,
             child: Wrap(
               alignment: WrapAlignment.center,
-              spacing: 10,
-              runSpacing: 10,
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 for (final (label, value) in _filters)
                   Builder(builder: (_) {
@@ -807,7 +814,7 @@ class _PemakaianListState extends State<_PemakaianList>
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 22, vertical: 12),
+                            horizontal: 16, vertical: 9),
                         decoration: BoxDecoration(
                           color: aktif
                               ? AppColors.primary
@@ -822,7 +829,7 @@ class _PemakaianListState extends State<_PemakaianList>
                         child: Text(
                           label,
                           style: _poppins(
-                            14,
+                            12,
                             FontWeight.w600,
                             aktif ? Colors.white : AppColors.textSecondary,
                           ),
@@ -843,7 +850,7 @@ class _PemakaianListState extends State<_PemakaianList>
                   note: _loading ? '' : '$_total transaksi',
                   icon: Icons.attach_money,
                   warna: AppColors.primary,
-                  latar: AppColors.primarySoft,
+                  latar: _bgBiru,
                 ),
               ),
               const SizedBox(width: 12),
@@ -854,6 +861,7 @@ class _PemakaianListState extends State<_PemakaianList>
                   note: _mine ? 'milik Anda' : 'hanya dilihat',
                   icon: Icons.local_gas_station,
                   warna: AppColors.success,
+                  teks: _fgHijau,
                   latar: _bgHijau,
                 ),
               ),
@@ -947,6 +955,8 @@ class _Ringkas extends StatelessWidget {
   final IconData icon;
   final Color warna, latar;
 
+  /// Warna teks catatan; kalau kosong memakai [warna].
+  final Color? teks;
   const _Ringkas({
     required this.label,
     required this.value,
@@ -954,6 +964,7 @@ class _Ringkas extends StatelessWidget {
     required this.icon,
     required this.warna,
     required this.latar,
+    this.teks,
   });
 
   @override
@@ -976,8 +987,7 @@ class _Ringkas extends StatelessWidget {
             child: Icon(icon, size: 18, color: warna),
           ),
           const SizedBox(height: 10),
-          Text(label,
-              style: _poppins(11, FontWeight.w500, AppColors.textSecondary)),
+          Text(label, style: _poppins(12, FontWeight.w500, _fgAbu)),
           const SizedBox(height: 2),
           FittedBox(
             fit: BoxFit.scaleDown,
@@ -988,7 +998,7 @@ class _Ringkas extends StatelessWidget {
           ),
           if (note.isNotEmpty) ...[
             const SizedBox(height: 2),
-            Text(note, style: _poppins(12, FontWeight.w500, warna)),
+            Text(note, style: _poppins(12, FontWeight.w500, teks ?? warna)),
           ],
         ],
       ),
@@ -1018,7 +1028,7 @@ class _Kartu extends StatelessWidget {
   Widget _chipFoto() => Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: AppColors.primarySoft,
+          color: _bgBiru,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -1027,7 +1037,7 @@ class _Kartu extends StatelessWidget {
             Icon(Icons.image_outlined, size: 13, color: AppColors.primary),
             const SizedBox(width: 4),
             Text('Foto',
-                style: _poppins(11, FontWeight.w600, AppColors.primary)),
+                style: _poppins(12, FontWeight.w600, AppColors.primary)),
           ],
         ),
       );
@@ -1084,7 +1094,7 @@ class _Kartu extends StatelessWidget {
                                   14, FontWeight.w600, AppColors.textPrimary)),
                           const SizedBox(height: 2),
                           Text(fmtTgl(m['tanggal']),
-                              style: _poppins(11, FontWeight.w400,
+                              style: _poppins(12, FontWeight.w400,
                                   AppColors.textSecondary)),
                         ],
                       ),
@@ -1103,11 +1113,11 @@ class _Kartu extends StatelessWidget {
                         _bgBiru),
                     _chip(
                       fmtTitle(m['lokasi_pembelian']),
-                      paiton ? AppColors.success : AppColors.warning,
+                      paiton ? _fgHijau : _fgKuning,
                       paiton ? _bgHijau : _bgKuning,
                     ),
-                    _chip('${formatLiter(m['liter'] as num)} L',
-                        AppColors.textSecondary, AppColors.background),
+                    _chip('${formatLiter(asDouble(m['liter']))} L',
+                        _fgAbu, AppColors.background),
                     if (adaFoto) _chipFoto(),
                   ],
                 ),
@@ -1123,16 +1133,14 @@ class _Kartu extends StatelessWidget {
                             AppColors.primary.withValues(alpha: 0.12),
                         child: Text(
                           pencatat.isEmpty ? '?' : pencatat[0].toUpperCase(),
-                          style: _poppins(
-                              11, FontWeight.w700, AppColors.primary),
+                          style: _poppins(12, FontWeight.w700, AppColors.primary),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text('Dicatat oleh $pencatat',
                             overflow: TextOverflow.ellipsis,
-                            style: _poppins(
-                                11, FontWeight.w500, AppColors.textSecondary)),
+                            style: _poppins(12, FontWeight.w500, AppColors.textSecondary)),
                       ),
                       const Icon(Icons.chevron_right_rounded,
                           size: 18, color: AppColors.textSecondary),

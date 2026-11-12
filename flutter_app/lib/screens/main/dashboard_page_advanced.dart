@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,6 +9,9 @@ import '../../config/app_theme.dart';
 import '../../models/pemakaian_bbm.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/pemakaian_bbm_provider.dart';
+import '../../services/api_service.dart';
+import '../../utils/api_error.dart';
+import '../../utils/display_format.dart';
 import '../../widgets/advanced_stat_card.dart';
 import '../../widgets/advanced_header.dart';
 import '../../widgets/advanced_quick_action.dart';
@@ -38,9 +42,13 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
-  /// Hanya untuk pemuatan awal. Setelah itu, angka dan daftar dihitung
-  /// langsung dari provider di build() sehingga ikut berubah otomatis.
+  /// Hanya untuk pemuatan awal (spinner layar penuh).
   bool _isLoading = true;
+
+  /// Ringkasan dan transaksi terakhir berasal dari SERVER (semua data, semua
+  /// driver), sama seperti total di Riwayat, bukan dihitung dari 20 data.
+  Map<String, dynamic> _stats = {};
+  List<PemakaianBbm> _recent = [];
 
   @override
   bool get wantKeepAlive => true;
@@ -73,17 +81,50 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
     _animationController.forward();
   }
 
+  /// Ambil ringkasan dari server. Mengembalikan pesan error, atau null.
+  Future<String?> _fetchRingkasan() async {
+    try {
+      final res = await ApiService().getRingkasanPemakaian();
+      final d = Map<String, dynamic>.from(res.data['data'] as Map);
+
+      _stats = {
+        'todayTotal': asDouble(d['today_total']),
+        'todayLiter': asDouble(d['today_liter']),
+        'todayCount': asDouble(d['today_count']).toInt(),
+        'monthTotal': asDouble(d['month_total']),
+        'monthLiter': asDouble(d['month_liter']),
+        'monthCount': asDouble(d['month_count']).toInt(),
+        'percentageChange': asDouble(d['percentage_change']),
+        'totalVehicles': asDouble(d['total_vehicles']).toInt(),
+      };
+      _recent = (d['recent'] as List)
+          .map((e) =>
+              PemakaianBbm.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      return null;
+    } on DioException catch (e) {
+      return parseApiError(e, 'Gagal memuat ringkasan.');
+    } catch (_) {
+      return 'Gagal memuat ringkasan.';
+    }
+  }
+
   /// [silent] = true: muat ulang tanpa spinner layar penuh.
   Future<void> _loadDashboardData({bool silent = false}) async {
     if (!silent && !_isLoading) setState(() => _isLoading = true);
 
     final provider = context.read<PemakaianBbmProvider>();
-    await provider.loadPemakaian(reset: true);
+
+    // Ringkasan (server) dan data grafik (provider) dimuat bersamaan.
+    final results = await Future.wait<Object?>([
+      _fetchRingkasan(),
+      provider.loadPemakaian(reset: true),
+    ]);
 
     if (!mounted) return;
     setState(() => _isLoading = false);
 
-    final error = provider.error;
+    final error = (results[0] as String?) ?? provider.error;
     if (error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -96,58 +137,6 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
     }
   }
 
-  /// Statistik dihitung dari data provider setiap build.
-  Map<String, dynamic> _computeStats(List<PemakaianBbm> allData) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final thisMonth = DateTime(now.year, now.month);
-    final lastMonth = now.month == 1
-        ? DateTime(now.year - 1, 12)
-        : DateTime(now.year, now.month - 1);
-
-    final todayData = allData.where((item) {
-      final itemDate = DateTime(
-        item.tanggal.year,
-        item.tanggal.month,
-        item.tanggal.day,
-      );
-      return itemDate == today;
-    }).toList();
-
-    final monthData = allData
-        .where((item) =>
-            item.tanggal.year == thisMonth.year &&
-            item.tanggal.month == thisMonth.month)
-        .toList();
-
-    final lastMonthData = allData
-        .where((item) =>
-            item.tanggal.year == lastMonth.year &&
-            item.tanggal.month == lastMonth.month)
-        .toList();
-
-    double sumJumlah(List<PemakaianBbm> l) =>
-        l.fold<double>(0, (sum, item) => sum + item.jumlah);
-    double sumLiter(List<PemakaianBbm> l) =>
-        l.fold<double>(0, (sum, item) => sum + item.liter);
-
-    final monthTotal = sumJumlah(monthData);
-    final lastMonthTotal = sumJumlah(lastMonthData);
-
-    return {
-      'todayTotal': sumJumlah(todayData),
-      'todayLiter': sumLiter(todayData),
-      'todayCount': todayData.length,
-      'monthTotal': monthTotal,
-      'monthLiter': sumLiter(monthData),
-      'monthCount': monthData.length,
-      'percentageChange': lastMonthTotal > 0
-          ? ((monthTotal - lastMonthTotal) / lastMonthTotal) * 100
-          : 0.0,
-      'totalVehicles': allData.map((e) => e.kendaraanId).toSet().length,
-    };
-  }
-
   @override
   void dispose() {
     _animationController.dispose();
@@ -158,9 +147,8 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
   Widget build(BuildContext context) {
     super.build(context);
 
-    final items = context.watch<PemakaianBbmProvider>().items;
-    final stats = _computeStats(items);
-    final recent = items.take(6).toList();
+    final stats = _stats;
+    final recent = _recent;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -289,7 +277,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Lihat performa pemakaian BBM Anda',
+                    'Pemakaian BBM seluruh driver',
                     style: GoogleFonts.poppins(
                       fontSize: 11,
                       fontWeight: FontWeight.w400,
