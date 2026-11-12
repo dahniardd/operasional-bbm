@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../config/app_theme.dart';
 import '../../services/api_service.dart';
 import '../../services/storage_service.dart';
+import '../../utils/display_format.dart';
+import '../../utils/formatters.dart';
+import '../../widgets/pln_header_shell.dart';
 import '../login_screen.dart';
 
 // ============================================================
@@ -17,45 +21,6 @@ TextStyle _poppins(double size, FontWeight w, Color c, {double? ls}) =>
       color: c,
       letterSpacing: ls,
     );
-
-const _bulan = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-  'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
-];
-
-String _tgl(String raw) {
-  final iso = raw.length >= 10 ? raw.substring(0, 10) : raw;
-  final p = iso.split('-');
-  if (p.length != 3) return raw;
-  final m = int.tryParse(p[1]) ?? 0;
-  if (m < 1 || m > 12) return raw;
-  return '${int.tryParse(p[2]) ?? p[2]} ${_bulan[m - 1]} ${p[0]}';
-}
-
-String _angka(num v, {int desimal = 0}) {
-  final s = v.toStringAsFixed(desimal);
-  final parts = s.split('.');
-  final b = StringBuffer();
-  final d = parts[0];
-  for (var i = 0; i < d.length; i++) {
-    if (i > 0 && (d.length - i) % 3 == 0) b.write('.');
-    b.write(d[i]);
-  }
-  return parts.length > 1 ? '$b,${parts[1]}' : b.toString();
-}
-
-/// 1.250.000 -> "Rp 1,25 jt", 300.000 -> "Rp 300 rb"
-String _rpRingkas(num v) {
-  if (v >= 1000000) {
-    final x = (v / 1000000).toStringAsFixed(2).replaceAll(RegExp(r'\.?0+$'), '');
-    return 'Rp ${x.replaceAll('.', ',')} jt';
-  }
-  if (v >= 1000) {
-    final x = (v / 1000).toStringAsFixed(1).replaceAll(RegExp(r'\.?0+$'), '');
-    return 'Rp ${x.replaceAll('.', ',')} rb';
-  }
-  return 'Rp ${_angka(v)}';
-}
 
 class _PeranInfo {
   final String label;
@@ -108,6 +73,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   double _totalRp = 0;
   String? _terakhirTanggal;
   String? _terakhirPlat;
+  bool _aktivitasLoading = true;
 
   @override
   void initState() {
@@ -149,8 +115,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!mounted) return;
       setState(() {
         _totalTransaksi = (meta['total'] as num).toInt();
-        _totalLiter = ((meta['total_liter'] ?? 0) as num).toDouble();
-        _totalRp = ((meta['total_jumlah'] ?? 0) as num).toDouble();
+        _totalLiter = asDouble(meta['total_liter']);
+        _totalRp = asDouble(meta['total_jumlah']);
         if (data.isNotEmpty) {
           _terakhirTanggal = data.first['tanggal'] as String?;
           _terakhirPlat = data.first['plat_nomor'] as String?;
@@ -158,6 +124,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
     } catch (_) {
       // Ringkasan tidak wajib; profil tetap tampil.
+    } finally {
+      if (mounted) setState(() => _aktivitasLoading = false);
     }
   }
 
@@ -350,16 +318,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ls: -0.2)),
             ),
             const SizedBox(height: 2),
-            Text(label,
-                style: _poppins(10, FontWeight.w500, AppColors.textSecondary)),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(label,
+                  maxLines: 1,
+                  style: _poppins(
+                      12, FontWeight.w500, AppColors.textSecondary)),
+            ),
           ],
         ),
       ),
     );
   }
 
+  /// Kerangka bagian "Aktivitas Anda" (judul + tiga kotak statistik).
+  Widget _skeletonAktivitas() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(bottom: 10, left: 2),
+          child: _Skeleton(width: 110, height: 16, radius: 6),
+        ),
+        Row(
+          children: const [
+            Expanded(child: _Skeleton(height: 96, radius: 18)),
+            SizedBox(width: 10),
+            Expanded(child: _Skeleton(height: 96, radius: 18)),
+            SizedBox(width: 10),
+            Expanded(child: _Skeleton(height: 96, radius: 18)),
+          ],
+        ),
+        const SizedBox(height: 22),
+      ],
+    );
+  }
+
+  /// Kerangka seluruh halaman saat profil pertama kali dimuat.
+  Widget _skeletonHalaman() {
+    return ListView(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
+      children: [
+        const _Skeleton(height: 240, radius: 28),
+        const SizedBox(height: 22),
+        _skeletonAktivitas(),
+        const Padding(
+          padding: EdgeInsets.only(bottom: 10, left: 2),
+          child: _Skeleton(width: 130, height: 16, radius: 6),
+        ),
+        const _Skeleton(height: 230, radius: 20),
+      ],
+    );
+  }
+
   Widget _aktivitas() {
-    if (_totalTransaksi == null) return const SizedBox.shrink();
+    if (_totalTransaksi == null) {
+      // Pertama kali dimuat: tampilkan kerangka supaya layout tidak melompat.
+      // Kalau gagal dimuat, bagian ini disembunyikan.
+      return _aktivitasLoading ? _skeletonAktivitas() : const SizedBox.shrink();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -371,10 +390,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 'Transaksi', AppColors.primary),
             const SizedBox(width: 10),
             _statMini(Icons.local_gas_station_outlined,
-                '${_angka(_totalLiter, desimal: 1)} L', 'Total BBM',
+                '${formatLiter(_totalLiter)} L', 'Total BBM',
                 AppColors.success),
             const SizedBox(width: 10),
-            _statMini(Icons.payments_outlined, _rpRingkas(_totalRp),
+            _statMini(Icons.payments_outlined, fmtRpRingkas(_totalRp),
                 'Pengeluaran', AppColors.warning),
           ],
         ),
@@ -392,7 +411,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Terakhir mengisi ${_tgl(_terakhirTanggal!)}'
+                    'Terakhir mengisi ${fmtTgl(_terakhirTanggal!)}'
                     '${_terakhirPlat != null ? ' • $_terakhirPlat' : ''}',
                     style: _poppins(
                         12, FontWeight.w500, AppColors.textPrimary),
@@ -457,8 +476,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     if (catatan != null) ...[
                       const SizedBox(height: 3),
                       Text(catatan,
-                          style: _poppins(
-                              11, FontWeight.w400, AppColors.textSecondary)),
+                          style: _poppins(12, FontWeight.w400, AppColors.textSecondary)),
                     ],
                   ],
                 ),
@@ -483,22 +501,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        foregroundColor: AppColors.textPrimary,
-        title: Text('Profil',
-            style: _poppins(18, FontWeight.w700, AppColors.textPrimary,
-                ls: -0.3)),
-      ),
-      body: SafeArea(
-        child: _loading
-            ? Center(
-                child: CircularProgressIndicator(
-                    color: AppColors.primary, strokeWidth: 3),
-              )
+      body: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.light,
+        child: Column(
+          children: [
+            PlnHeaderShell(
+              onBack: () => Navigator.of(context).maybePop(),
+              child: const PlnHeaderTitle(
+                icon: Icons.person_outline_rounded,
+                title: 'Profil',
+                subtitle: 'Informasi akun dan aktivitas Anda',
+              ),
+            ),
+            Expanded(
+              child: SafeArea(
+                top: false,
+                child: _loading
+            ? _skeletonHalaman()
             : _error != null
                 ? Center(
                     child: Padding(
@@ -591,6 +610,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                   ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -739,6 +762,50 @@ class _KonfirmasiKeluar extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================
+// Kerangka loading (skeleton) berdenyut
+// ============================================================
+
+class _Skeleton extends StatefulWidget {
+  final double? width;
+  final double height;
+  final double radius;
+  const _Skeleton({this.width, required this.height, this.radius = 12});
+
+  @override
+  State<_Skeleton> createState() => _SkeletonState();
+}
+
+class _SkeletonState extends State<_Skeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: Tween<double>(begin: 0.45, end: 1.0)
+          .animate(CurvedAnimation(parent: _c, curve: Curves.easeInOut)),
+      child: Container(
+        width: widget.width,
+        height: widget.height,
+        decoration: BoxDecoration(
+          color: AppColors.border,
+          borderRadius: BorderRadius.circular(widget.radius),
         ),
       ),
     );
