@@ -93,17 +93,17 @@ class AdvancedQuickAction extends StatelessWidget {
                     child: Row(
                       children: [
                         Container(
-                          width: 38,
-                          height: 38,
+                          width: 36,
+                          height: 36,
                           decoration: BoxDecoration(
                             color: iconBackground,
                             borderRadius: BorderRadius.circular(
                               AppTokens.radiusMd,
                             ),
                           ),
-                          child: Icon(icon, color: iconColor, size: 20),
+                          child: Icon(icon, color: iconColor, size: 18),
                         ),
-                        const SizedBox(width: AppTokens.space10),
+                        const SizedBox(width: AppTokens.space8),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,7 +112,7 @@ class AdvancedQuickAction extends StatelessWidget {
                               Text(
                                 label,
                                 style: GoogleFonts.poppins(
-                                  fontSize: AppTokens.fontBody,
+                                  fontSize: 13,
                                   fontWeight: FontWeight.w700,
                                   color: labelColor,
                                 ),
@@ -120,15 +120,15 @@ class AdvancedQuickAction extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                               if (description != null) ...[
-                                const SizedBox(height: AppTokens.space2),
+                                const SizedBox(height: 2),
                                 Text(
                                   description!,
                                   style: GoogleFonts.poppins(
-                                    fontSize: AppTokens.fontCaption,
+                                    fontSize: 10,
                                     fontWeight: FontWeight.w400,
                                     color: descriptionColor,
                                   ),
-                                  maxLines: 2,
+                                  maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ],
@@ -136,20 +136,20 @@ class AdvancedQuickAction extends StatelessWidget {
                           ),
                         ),
                         if (isPrimary) ...[
-                          const SizedBox(width: AppTokens.space6),
+                          const SizedBox(width: AppTokens.space4),
                           Container(
-                            width: AppTokens.space24,
-                            height: AppTokens.space24,
+                            width: AppTokens.space20,
+                            height: AppTokens.space20,
                             decoration: BoxDecoration(
                               color: AppTokens.onBrandAccent,
                               borderRadius: BorderRadius.circular(
-                                AppTokens.space6,
+                                4,
                               ),
                             ),
                             child: Icon(
                               Icons.arrow_forward,
                               color: iconColor,
-                              size: AppTokens.fontBody,
+                              size: 12,
                             ),
                           ),
                         ],
