@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../config/app_colors.dart';
-import '../config/theme.dart';
+import '../config/app_theme.dart';
 
 class InputSectionCard extends StatelessWidget {
   final IconData icon;
@@ -31,14 +30,14 @@ class InputSectionCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, color: AppColors.darkTeal, size: 18),
+              Icon(icon, color: AppColors.darkNavy, size: 18),
               const SizedBox(width: 8),
               Text(
                 title,
-                style: GoogleFonts.inter(
+                style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.navy,
+                  color: AppColors.darkNavy,
                 ),
               ),
             ],

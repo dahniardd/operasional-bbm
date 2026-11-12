@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
+import '../config/app_strings.dart';
+import '../config/app_theme.dart';
 import '../providers/auth_provider.dart';
 import 'login_screen.dart';
 import 'main_shell.dart';
@@ -18,9 +20,6 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   static const String _videoAsset = 'assets/videos/logo_splash.mp4';
-
-  // Warna latar saat video belum siap. Samakan dengan warna background videomu.
-  static const Color _background = Color(0xFF0B1C30);
 
   VideoPlayerController? _controller;
   bool _navigated = false;
@@ -106,21 +105,24 @@ class _SplashScreenState extends State<SplashScreen> {
     final controller = _controller;
     final ready = controller != null && controller.value.isInitialized;
 
-    return Scaffold(
-      backgroundColor: _background,
-      body: SizedBox.expand(
-        child: ready
-            ? FittedBox(
-                // cover = penuhi layar. Ganti ke BoxFit.contain kalau
-                // logonya terpotong di tepi layar.
-                fit: BoxFit.cover,
-                child: SizedBox(
-                  width: controller.value.size.width,
-                  height: controller.value.size.height,
-                  child: VideoPlayer(controller),
-                ),
-              )
-            : const SizedBox.shrink(),
+    return Semantics(
+      label: AppStrings.appName,
+      child: Scaffold(
+        backgroundColor: AppColors.darkNavy,
+        body: SizedBox.expand(
+          child: ready
+              ? FittedBox(
+                  // cover = penuhi layar. Ganti ke BoxFit.contain kalau
+                  // logonya terpotong di tepi layar.
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: controller.value.size.width,
+                    height: controller.value.size.height,
+                    child: VideoPlayer(controller),
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
       ),
     );
   }
