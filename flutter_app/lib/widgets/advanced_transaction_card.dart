@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../config/pln_colors.dart';
+
+import '../config/design_tokens.dart';
 import '../models/pemakaian_bbm.dart';
 
-/// Advanced Transaction Card dengan detail expandable
+/// Kartu transaksi dengan detail yang dapat dibuka tanpa controller eksplisit.
 class AdvancedTransactionCard extends StatefulWidget {
   final PemakaianBbm pemakaian;
   final bool isExpanded;
@@ -20,29 +21,13 @@ class AdvancedTransactionCard extends StatefulWidget {
       _AdvancedTransactionCardState();
 }
 
-class _AdvancedTransactionCardState extends State<AdvancedTransactionCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _expandAnimation;
+class _AdvancedTransactionCardState extends State<AdvancedTransactionCard> {
   late bool _isExpanded;
 
   @override
   void initState() {
     super.initState();
     _isExpanded = widget.isExpanded;
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-
-    _expandAnimation = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
-
-    if (_isExpanded) {
-      _controller.forward();
-    }
   }
 
   @override
@@ -50,27 +35,11 @@ class _AdvancedTransactionCardState extends State<AdvancedTransactionCard>
     super.didUpdateWidget(oldWidget);
     if (widget.isExpanded != oldWidget.isExpanded) {
       _isExpanded = widget.isExpanded;
-      if (_isExpanded) {
-        _controller.forward();
-      } else {
-        _controller.reverse();
-      }
     }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
   }
 
   void _toggleExpanded() {
     setState(() => _isExpanded = !_isExpanded);
-    if (_isExpanded) {
-      _controller.forward();
-    } else {
-      _controller.reverse();
-    }
   }
 
   String _formatBbmName(String jenisBbm) {
@@ -106,178 +75,189 @@ class _AdvancedTransactionCardState extends State<AdvancedTransactionCard>
           ).format(tx.jumlah / tx.liter)
         : '-';
 
-    return Container(
-      decoration: BoxDecoration(
-        color: PlnColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: PlnColors.border, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: _toggleExpanded,
-          borderRadius: BorderRadius.circular(14),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              children: [
-                // Header row
-                Row(
-                  children: [
-                    // Icon
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            PlnColors.primaryBlue.withValues(alpha: 0.1),
-                            PlnColors.primaryBlue.withValues(alpha: 0.05),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(11),
-                      ),
-                      child: const Icon(
-                        Icons.local_gas_station,
-                        color: PlnColors.primaryBlue,
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Info
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            tx.platNomor,
-                            style: GoogleFonts.poppins(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: PlnColors.textPrimary,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.calendar_today,
-                                size: 12,
-                                color: PlnColors.textSecondary,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                DateFormat(
-                                  'd MMM yyyy',
-                                  'id_ID',
-                                ).format(tx.tanggal),
-                                style: GoogleFonts.poppins(
-                                  fontSize: 11,
-                                  color: PlnColors.textSecondary,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Container(
-                                width: 1,
-                                height: 10,
-                                color: PlnColors.border,
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                '${tx.liter.toStringAsFixed(1)}L',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: PlnColors.primaryBlue,
-                                ),
-                              ),
+    return Semantics(
+      button: true,
+      label: 'Transaksi ${tx.platNomor}, $price',
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppTokens.surface,
+          borderRadius: BorderRadius.circular(AppTokens.radiusCard),
+          border: Border.all(color: AppTokens.border, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: AppTokens.space8,
+              offset: const Offset(0, AppTokens.space2),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: _toggleExpanded,
+            borderRadius: BorderRadius.circular(AppTokens.radiusCard),
+            child: Padding(
+              padding: const EdgeInsets.all(AppTokens.space14),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppTokens.brand.withValues(alpha: 0.1),
+                              AppTokens.brand.withValues(alpha: 0.05),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                    // Amount dan expand icon
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          price,
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: PlnColors.primaryBlue,
+                          borderRadius: BorderRadius.circular(
+                            AppTokens.radiusMd,
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Icon(
-                          _isExpanded ? Icons.expand_less : Icons.expand_more,
-                          color: PlnColors.textSecondary,
-                          size: 20,
+                        child: const Icon(
+                          Icons.local_gas_station,
+                          color: AppTokens.brand,
+                          size: 22,
                         ),
-                      ],
-                    ),
-                  ],
-                ),
-                // Expanded details
-                SizeTransition(
-                  sizeFactor: _expandAnimation,
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 12),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: PlnColors.background,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: PlnColors.border),
-                        ),
+                      ),
+                      const SizedBox(width: AppTokens.space12),
+                      Expanded(
+                        flex: 3,
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildDetailRow(
-                              'Jenis BBM',
-                              _formatBbmName(tx.jenisBbm),
-                              Icons.local_gas_station,
+                            Text(
+                              tx.platNomor,
+                              style: GoogleFonts.poppins(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: AppTokens.textPrimary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            const Divider(height: 1, color: PlnColors.border),
-                            _buildDetailRow(
-                              'Jumlah',
-                              '${tx.liter.toStringAsFixed(1)} Liter',
-                              Icons.format_list_numbered,
+                            const SizedBox(height: AppTokens.space2),
+                            Wrap(
+                              spacing: AppTokens.space8,
+                              runSpacing: AppTokens.space4,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                _buildMeta(
+                                  Icons.calendar_today,
+                                  DateFormat(
+                                    'd MMM yyyy',
+                                    'id_ID',
+                                  ).format(tx.tanggal),
+                                ),
+                                _buildMeta(
+                                  Icons.local_gas_station,
+                                  '${tx.liter.toStringAsFixed(1)}L',
+                                  color: AppTokens.brand,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ],
                             ),
-                            const Divider(height: 1, color: PlnColors.border),
-                            _buildDetailRow(
-                              'Lokasi',
-                              tx.lokasiPembelian == 'paiton'
-                                  ? 'Paiton'
-                                  : 'Luar Paiton',
-                              Icons.location_on,
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: AppTokens.space8),
+                      Expanded(
+                        flex: 2,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              price,
+                              textAlign: TextAlign.right,
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: AppTokens.brand,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            const Divider(height: 1, color: PlnColors.border),
-                            _buildDetailRow(
-                              'Harga/Liter',
-                              pricePerLiter,
-                              Icons.price_check,
+                            const SizedBox(height: AppTokens.space2),
+                            Icon(
+                              _isExpanded
+                                  ? Icons.expand_less
+                                  : Icons.expand_more,
+                              color: AppTokens.textSecondary,
+                              size: 20,
                             ),
                           ],
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    alignment: Alignment.topCenter,
+                    child: _isExpanded
+                        ? Column(
+                            children: [
+                              const SizedBox(height: AppTokens.space12),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppTokens.space12,
+                                  vertical: AppTokens.space2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppTokens.background,
+                                  borderRadius: BorderRadius.circular(
+                                    AppTokens.radiusMd,
+                                  ),
+                                  border: Border.all(color: AppTokens.border),
+                                ),
+                                child: Column(
+                                  children: [
+                                    _buildDetailRow(
+                                      'Jenis BBM',
+                                      _formatBbmName(tx.jenisBbm),
+                                      Icons.local_gas_station,
+                                    ),
+                                    const Divider(
+                                      height: 1,
+                                      color: AppTokens.border,
+                                    ),
+                                    _buildDetailRow(
+                                      'Jumlah',
+                                      '${tx.liter.toStringAsFixed(1)} Liter',
+                                      Icons.format_list_numbered,
+                                    ),
+                                    const Divider(
+                                      height: 1,
+                                      color: AppTokens.border,
+                                    ),
+                                    _buildDetailRow(
+                                      'Lokasi',
+                                      tx.lokasiPembelian == 'paiton'
+                                          ? 'Paiton'
+                                          : 'Luar Paiton',
+                                      Icons.location_on,
+                                    ),
+                                    const Divider(
+                                      height: 1,
+                                      color: AppTokens.border,
+                                    ),
+                                    _buildDetailRow(
+                                      'Harga/Liter',
+                                      pricePerLiter,
+                                      Icons.price_check,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -285,33 +265,57 @@ class _AdvancedTransactionCardState extends State<AdvancedTransactionCard>
     );
   }
 
+  Widget _buildMeta(
+    IconData icon,
+    String text, {
+    Color color = AppTokens.textSecondary,
+    FontWeight fontWeight = FontWeight.w400,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: AppTokens.fontCaption, color: color),
+        const SizedBox(width: AppTokens.space4),
+        Text(
+          text,
+          style: GoogleFonts.poppins(
+            fontSize: AppTokens.fontCaption,
+            fontWeight: fontWeight,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildDetailRow(String label, String value, IconData icon) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 9),
+      padding: const EdgeInsets.symmetric(vertical: AppTokens.space10),
       child: Row(
         children: [
-          Icon(icon, size: 14, color: PlnColors.textSecondary),
-          const SizedBox(width: 8),
+          Icon(icon, size: AppTokens.fontBody, color: AppTokens.textSecondary),
+          const SizedBox(width: AppTokens.space8),
           Expanded(
             child: Text(
               label,
               style: GoogleFonts.poppins(
-                fontSize: 11,
+                fontSize: AppTokens.fontCaption,
                 fontWeight: FontWeight.w500,
-                color: PlnColors.textSecondary,
+                color: AppTokens.textSecondary,
               ),
             ),
           ),
+          const SizedBox(width: AppTokens.space8),
           Flexible(
             child: Text(
               value,
               textAlign: TextAlign.right,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.poppins(
-                fontSize: 12,
+                fontSize: AppTokens.fontCaption,
                 fontWeight: FontWeight.w600,
-                color: PlnColors.textPrimary,
+                color: AppTokens.textPrimary,
               ),
             ),
           ),
