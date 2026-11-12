@@ -9,7 +9,7 @@ import '../../config/pln_colors.dart';
 import '../../services/api_service.dart';
 import '../../utils/display_format.dart';
 import '../../widgets/pln_header_shell.dart';
-import '../../utils/formatters.dart'; // <- sesuaikan dengan nama file util format yang sudah ada
+import '../../utils/formatters.dart';
 import 'profile_screen.dart';
 
 // ============================================================
@@ -799,8 +799,8 @@ class _PemakaianListState extends State<_PemakaianList>
             width: double.infinity,
             child: Wrap(
               alignment: WrapAlignment.center,
-              spacing: 10,
-              runSpacing: 10,
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 for (final (label, value) in _filters)
                   Builder(builder: (_) {
@@ -814,7 +814,7 @@ class _PemakaianListState extends State<_PemakaianList>
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 22, vertical: 12),
+                            horizontal: 16, vertical: 9),
                         decoration: BoxDecoration(
                           color: aktif
                               ? PlnColors.primaryBlue
@@ -829,7 +829,7 @@ class _PemakaianListState extends State<_PemakaianList>
                         child: Text(
                           label,
                           style: _poppins(
-                            14,
+                            12,
                             FontWeight.w600,
                             aktif ? Colors.white : PlnColors.textSecondary,
                           ),
