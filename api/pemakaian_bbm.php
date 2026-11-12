@@ -191,6 +191,77 @@ function validate_pemakaian_input($pdo, $input)
 }
 
 if ($method === 'GET') {
+    // Ringkasan untuk Dashboard: dihitung di server dari SEMUA data (bukan dari
+    // 20 data terbaru di aplikasi), jadi angkanya sama dengan total di Riwayat.
+    // scope=mine -> hanya milik user login; scope=others -> driver lain;
+    // tanpa scope -> semua driver.
+    if ($action === 'ringkasan') {
+        $where = [];
+        $params = [];
+
+        $scope = $_GET['scope'] ?? '';
+        if ($scope === 'mine') {
+            $where[] = "p.dicatat_oleh = ?";
+            $params[] = (int) $user['id'];
+        } elseif ($scope === 'others') {
+            $where[] = "p.dicatat_oleh <> ?";
+            $params[] = (int) $user['id'];
+        }
+
+        $whereSql = !empty($where) ? ' WHERE ' . implode(' AND ', $where) : '';
+
+        $today = date('Y-m-d');
+        $monthStart = date('Y-m-01');
+        $nextMonthStart = date('Y-m-01', strtotime('first day of next month'));
+        $lastMonthStart = date('Y-m-01', strtotime('first day of last month'));
+
+        $stmt = $pdo->prepare(
+            "SELECT
+                COALESCE(SUM(CASE WHEN p.tanggal = ? THEN p.jumlah END), 0) AS today_total,
+                COALESCE(SUM(CASE WHEN p.tanggal = ? THEN p.liter END), 0) AS today_liter,
+                COALESCE(SUM(CASE WHEN p.tanggal = ? THEN 1 ELSE 0 END), 0) AS today_count,
+                COALESCE(SUM(CASE WHEN p.tanggal >= ? AND p.tanggal < ? THEN p.jumlah END), 0) AS month_total,
+                COALESCE(SUM(CASE WHEN p.tanggal >= ? AND p.tanggal < ? THEN p.liter END), 0) AS month_liter,
+                COALESCE(SUM(CASE WHEN p.tanggal >= ? AND p.tanggal < ? THEN 1 ELSE 0 END), 0) AS month_count,
+                COALESCE(SUM(CASE WHEN p.tanggal >= ? AND p.tanggal < ? THEN p.jumlah END), 0) AS last_month_total,
+                COUNT(DISTINCT p.kendaraan_id) AS total_vehicles
+             FROM pemakaian_bbm p{$whereSql}"
+        );
+        $stmt->execute(array_merge([
+            $today, $today, $today,
+            $monthStart, $nextMonthStart,
+            $monthStart, $nextMonthStart,
+            $monthStart, $nextMonthStart,
+            $lastMonthStart, $monthStart,
+        ], $params));
+        $r = $stmt->fetch();
+
+        $monthTotal = (float) $r['month_total'];
+        $lastMonthTotal = (float) $r['last_month_total'];
+
+        $recentStmt = $pdo->prepare(
+            pemakaian_select_sql() . $whereSql . " ORDER BY p.tanggal DESC, p.id DESC LIMIT 6"
+        );
+        $recentStmt->execute($params);
+
+        json_response([
+            'data' => [
+                'today_total' => (float) $r['today_total'],
+                'today_liter' => (float) $r['today_liter'],
+                'today_count' => (int) $r['today_count'],
+                'month_total' => $monthTotal,
+                'month_liter' => (float) $r['month_liter'],
+                'month_count' => (int) $r['month_count'],
+                'last_month_total' => $lastMonthTotal,
+                'percentage_change' => $lastMonthTotal > 0
+                    ? (($monthTotal - $lastMonthTotal) / $lastMonthTotal) * 100
+                    : 0.0,
+                'total_vehicles' => (int) $r['total_vehicles'],
+                'recent' => array_map('format_pemakaian', $recentStmt->fetchAll()),
+            ],
+        ]);
+    }
+
     if ($id !== null && $id !== '') {
         $row = get_pemakaian_row($pdo, $id);
 
