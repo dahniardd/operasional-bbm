@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../config/pln_colors.dart';
+import '../config/app_strings.dart';
+import '../config/app_theme.dart';
 
 /// Kerangka header biru bersama: gradien, lingkaran dekorasi, SafeArea,
 /// identitas aplikasi, dan (opsional) tombol kembali / profil.
@@ -61,7 +62,7 @@ class PlnHeaderShell extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [PlnColors.primaryBlue, PlnColors.darkNavy],
+          colors: [AppColors.primary, AppColors.darkNavy],
         ),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(24),
@@ -69,7 +70,7 @@ class PlnHeaderShell extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: PlnColors.primaryBlue.withValues(alpha: 0.2),
+            color: AppColors.primary.withValues(alpha: 0.2),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -98,7 +99,7 @@ class PlnHeaderShell extends StatelessWidget {
               height: 150,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: PlnColors.accentYellow.withValues(alpha: 0.06),
+                color: AppColors.accentYellow.withValues(alpha: 0.06),
               ),
             ),
           ),
@@ -142,7 +143,7 @@ class PlnHeaderShell extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'PLN NP',
+                            AppStrings.companyName,
                             style: GoogleFonts.poppins(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
@@ -151,7 +152,7 @@ class PlnHeaderShell extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            'e-Operasional',
+                            AppStrings.appName,
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,

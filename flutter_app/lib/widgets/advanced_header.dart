@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../config/pln_colors.dart';
+
+import '../config/app_strings.dart';
+import '../config/app_theme.dart';
 import '../models/user.dart';
 
 /// Header utama dashboard: identitas aplikasi, aksi, dan info driver
@@ -45,7 +47,7 @@ class AdvancedHeader extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [PlnColors.primaryBlue, PlnColors.darkNavy],
+          colors: [AppColors.primary, AppColors.darkNavy],
           stops: const [0.0, 1.0],
         ),
         borderRadius: const BorderRadius.only(
@@ -54,7 +56,7 @@ class AdvancedHeader extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: PlnColors.primaryBlue.withValues(alpha: 0.2),
+            color: AppColors.primary.withValues(alpha: 0.2),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -83,7 +85,7 @@ class AdvancedHeader extends StatelessWidget {
               height: 150,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: PlnColors.accentYellow.withValues(alpha: 0.06),
+                color: AppColors.accentYellow.withValues(alpha: 0.06),
               ),
             ),
           ),
@@ -124,7 +126,7 @@ class AdvancedHeader extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'PLN NP',
+                            AppStrings.companyName,
                             style: GoogleFonts.poppins(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
@@ -133,7 +135,7 @@ class AdvancedHeader extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            'e-Operasional',
+                            AppStrings.appName,
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
@@ -198,7 +200,7 @@ class AdvancedHeader extends StatelessWidget {
                               children: [
                                 Icon(
                                   icon,
-                                  color: PlnColors.accentYellow,
+                                  color: AppColors.accentYellow,
                                   size: 13,
                                 ),
                                 const SizedBox(width: 5),
@@ -290,7 +292,7 @@ class AdvancedHeader extends StatelessWidget {
                     width: 6,
                     height: 6,
                     decoration: const BoxDecoration(
-                      color: PlnColors.danger,
+                      color: AppColors.danger,
                       shape: BoxShape.circle,
                     ),
                   ),

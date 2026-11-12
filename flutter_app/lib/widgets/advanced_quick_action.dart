@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../config/pln_colors.dart';
+import '../config/app_theme.dart';
 
 /// Advanced Quick Action Button dengan hover dan ripple effect
 class AdvancedQuickAction extends StatefulWidget {
@@ -56,10 +56,10 @@ class _AdvancedQuickActionState extends State<AdvancedQuickAction>
   @override
   Widget build(BuildContext context) {
     final isPrimary = widget.isPrimary;
-    final labelColor = isPrimary ? Colors.white : PlnColors.textPrimary;
+    final labelColor = isPrimary ? Colors.white : AppColors.textPrimary;
     final descriptionColor = isPrimary
         ? Colors.white.withValues(alpha: 0.78)
-        : PlnColors.textSecondary;
+        : AppColors.textSecondary;
     final iconBackground = isPrimary
         ? Colors.white.withValues(alpha: 0.16)
         : widget.primaryColor.withValues(alpha: 0.12);
@@ -87,7 +87,7 @@ class _AdvancedQuickActionState extends State<AdvancedQuickAction>
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: isPrimary
-                      ? [PlnColors.primaryBlue, PlnColors.darkNavy]
+                      ? [AppColors.primary, AppColors.darkNavy]
                       : [
                           widget.backgroundColor,
                           widget.backgroundColor.withValues(alpha: 0.6),
