@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../config/app_colors.dart';
+import '../config/app_theme.dart';
 import '../widgets/custom_bottom_nav.dart';
 import 'main/dashboard_page_advanced.dart' show DashboardPageAdvanced;
 import 'main/history_page.dart';
@@ -21,13 +21,15 @@ class _MainShellState extends State<MainShell> {
 
   int get _stackIndex => _currentIndex == _tabHistory ? 1 : 0;
 
-  /// Naik setiap kali Riwayat perlu dimuat ulang (buka tab, atau selesai input).
-  int _historyTick = 0;
+  /// Naik setiap kali data perlu dimuat ulang (pindah tab, atau selesai input).
+  /// Satu penanda yang sama untuk Dashboard dan Riwayat; keduanya mengambil
+  /// ulang dari server, jadi angkanya selalu berasal dari data yang sama.
+  int _dataTick = 0;
 
   void _openHistory() {
     setState(() {
       _currentIndex = _tabHistory;
-      _historyTick++;
+      _dataTick++;
     });
   }
 
@@ -35,8 +37,9 @@ class _MainShellState extends State<MainShell> {
     await Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => const InputBbmScreen()));
-    // Setelah kembali dari form input, data baru harus muncul di Riwayat.
-    if (mounted) setState(() => _historyTick++);
+    // Setelah kembali dari form input, data baru harus muncul di Dashboard
+    // dan Riwayat.
+    if (mounted) setState(() => _dataTick++);
   }
 
   @override
@@ -49,8 +52,11 @@ class _MainShellState extends State<MainShell> {
       body: IndexedStack(
         index: _stackIndex,
         children: [
-          DashboardPageAdvanced(onOpenHistory: _openHistory),
-          HistoryPage(refreshTick: _historyTick),
+          DashboardPageAdvanced(
+            onOpenHistory: _openHistory,
+            refreshTick: _dataTick,
+          ),
+          HistoryPage(refreshTick: _dataTick),
         ],
       ),
       bottomNavigationBar: CustomBottomNav(
@@ -63,7 +69,8 @@ class _MainShellState extends State<MainShell> {
 
           setState(() {
             _currentIndex = index;
-            if (index == _tabHistory) _historyTick++;
+            // Muat ulang diam-diam saat membuka Dashboard atau Riwayat.
+            _dataTick++;
           });
         },
       ),

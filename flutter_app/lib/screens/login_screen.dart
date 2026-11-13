@@ -4,20 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../config/app_strings.dart';
+import '../config/app_theme.dart';
 import '../providers/auth_provider.dart';
 import 'main_shell.dart';
-
-// Design tokens
-class _C {
-  static const primary = Color(0xFF006877);
-  static const primaryContainer = Color(0xFF00A2B9);
-  static const navy = Color(0xFF0B1C30);
-  static const surface = Color(0xFFF8F9FF);
-  static const secondary = Color(0xFF505F76);
-  static const error = Color(0xFFDC2626);
-  static const slate300 = Color(0xFFCBD5E1);
-  static const slate400 = Color(0xFF94A3B8);
-}
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -127,39 +117,39 @@ class _LoginScreenState extends State<LoginScreen>
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      labelStyle: GoogleFonts.plusJakartaSans(
+      labelStyle: GoogleFonts.poppins(
         fontSize: 16,
         fontWeight: FontWeight.w600,
-        color: _C.slate400,
+        color: AppColors.textMuted,
       ),
-      floatingLabelStyle: GoogleFonts.plusJakartaSans(
+      floatingLabelStyle: GoogleFonts.poppins(
         fontSize: 16,
         fontWeight: FontWeight.w700,
-        color: _C.primary,
+        color: AppColors.primary,
       ),
-      hintStyle: GoogleFonts.plusJakartaSans(
+      hintStyle: GoogleFonts.poppins(
         fontSize: 16,
         fontWeight: FontWeight.w500,
-        color: _C.slate400,
+        color: AppColors.textMuted,
       ),
       floatingLabelBehavior: FloatingLabelBehavior.auto,
       prefixIcon: Icon(icon, size: 26),
       prefixIconColor: WidgetStateColor.resolveWith(
         (states) => states.contains(WidgetState.focused)
-            ? _C.primary
-            : _C.slate400,
+            ? AppColors.primary
+            : AppColors.textMuted,
       ),
       suffixIcon: suffix,
       contentPadding: const EdgeInsets.symmetric(vertical: 20),
-      enabledBorder: line(_C.slate300),
-      border: line(_C.slate300),
-      focusedBorder: line(_C.primaryContainer, 2.4),
-      errorBorder: line(_C.error),
-      focusedErrorBorder: line(_C.error, 2.4),
-      errorStyle: GoogleFonts.plusJakartaSans(
+      enabledBorder: line(AppColors.border),
+      border: line(AppColors.border),
+      focusedBorder: line(AppColors.primaryLight, 2.4),
+      errorBorder: line(AppColors.error),
+      focusedErrorBorder: line(AppColors.error, 2.4),
+      errorStyle: GoogleFonts.poppins(
         fontSize: 13,
         fontWeight: FontWeight.w600,
-        color: _C.error,
+        color: AppColors.error,
       ),
     );
   }
@@ -185,8 +175,8 @@ class _LoginScreenState extends State<LoginScreen>
         ),
         const SizedBox(width: 10),
         Text(
-          'e-Operasional BBM',
-          style: GoogleFonts.plusJakartaSans(
+          AppStrings.appName,
+          style: GoogleFonts.poppins(
             fontSize: 13,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.2,
@@ -234,7 +224,7 @@ class _LoginScreenState extends State<LoginScreen>
                     gradient: RadialGradient(
                       center: Alignment(0, -0.4),
                       radius: 1.0,
-                      colors: [Color(0xFF004E5A), _C.navy],
+                      colors: [AppColors.primary, AppColors.darkNavy],
                     ),
                   ),
                 ),
@@ -249,7 +239,7 @@ class _LoginScreenState extends State<LoginScreen>
                 begin: Alignment.topCenter,
                 end: Alignment.center,
                 colors: [
-                  _C.navy.withValues(alpha: 0.6),
+                  AppColors.darkNavy.withValues(alpha: 0.6),
                   Colors.transparent,
                 ],
               ),
@@ -277,7 +267,7 @@ class _LoginScreenState extends State<LoginScreen>
           height: 3.5,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [_C.primary, _C.primaryContainer],
+              colors: [AppColors.primary, AppColors.primaryLight],
             ),
             borderRadius: BorderRadius.circular(999),
           ),
@@ -286,20 +276,20 @@ class _LoginScreenState extends State<LoginScreen>
         Text(
           'Selamat Datang',
           textAlign: TextAlign.center,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.poppins(
             fontSize: 28,
             fontWeight: FontWeight.w800,
-            color: _C.navy,
+            color: AppColors.darkNavy,
           ),
         ),
         const SizedBox(height: 10),
         Text(
           'Masukkan username dan password Anda untuk melanjutkan.',
           textAlign: TextAlign.center,
-          style: GoogleFonts.plusJakartaSans(
+          style: GoogleFonts.poppins(
             fontSize: 13,
             height: 1.5,
-            color: _C.secondary,
+            color: AppColors.textSecondary,
           ),
         ),
       ],
@@ -315,12 +305,12 @@ class _LoginScreenState extends State<LoginScreen>
         height: 60,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [_C.primary, _C.primaryContainer],
+            colors: [AppColors.primary, AppColors.primaryLight],
           ),
           borderRadius: BorderRadius.circular(999),
           boxShadow: [
             BoxShadow(
-              color: _C.primary.withValues(alpha: 0.3),
+              color: AppColors.primary.withValues(alpha: 0.3),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -343,7 +333,7 @@ class _LoginScreenState extends State<LoginScreen>
                     )
                   : Text(
                       'Masuk',
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.6,
@@ -375,7 +365,7 @@ class _LoginScreenState extends State<LoginScreen>
     final cardMinHeight = media.size.height - cardTop + _extraScroll;
 
     return Scaffold(
-      backgroundColor: _C.surface,
+      backgroundColor: AppColors.background,
       body: Stack(
         children: [
           // Foto di belakang, ikut bergeser pelan saat form di-scroll
@@ -428,14 +418,14 @@ class _LoginScreenState extends State<LoginScreen>
                         20 + media.padding.bottom,
                       ),
                       decoration: BoxDecoration(
-                        color: _C.surface,
+                        color: AppColors.background,
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(_cardRadius),
                           topRight: Radius.circular(20),
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: _C.navy.withValues(alpha: 0.12),
+                            color: AppColors.darkNavy.withValues(alpha: 0.12),
                             blurRadius: 25,
                             offset: const Offset(0, -8),
                           ),
@@ -454,10 +444,10 @@ class _LoginScreenState extends State<LoginScreen>
                               controller: _usernameController,
                               textInputAction: TextInputAction.next,
                               autofillHints: const [AutofillHints.username],
-                              style: GoogleFonts.plusJakartaSans(
+                              style: GoogleFonts.poppins(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
-                                color: _C.navy,
+                                color: AppColors.darkNavy,
                               ),
                               decoration: _inputDecoration(
                                 label: 'Username / NIP',
@@ -480,10 +470,10 @@ class _LoginScreenState extends State<LoginScreen>
                               textInputAction: TextInputAction.done,
                               autofillHints: const [AutofillHints.password],
                               onFieldSubmitted: (_) => _submit(),
-                              style: GoogleFonts.plusJakartaSans(
+                              style: GoogleFonts.poppins(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
-                                color: _C.navy,
+                                color: AppColors.darkNavy,
                               ),
                               decoration: _inputDecoration(
                                 label: 'Password',
@@ -500,7 +490,7 @@ class _LoginScreenState extends State<LoginScreen>
                                         ? Icons.visibility_outlined
                                         : Icons.visibility_off_outlined,
                                     size: 26,
-                                    color: _C.slate400,
+                                    color: AppColors.textMuted,
                                   ),
                                 ),
                               ),
@@ -518,25 +508,25 @@ class _LoginScreenState extends State<LoginScreen>
                               Container(
                                 padding: const EdgeInsets.all(14),
                                 decoration: BoxDecoration(
-                                  color: _C.error.withValues(alpha: 0.08),
+                                  color: AppColors.error.withValues(alpha: 0.08),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: _C.error.withValues(alpha: 0.25),
+                                    color: AppColors.error.withValues(alpha: 0.25),
                                   ),
                                 ),
                                 child: Row(
                                   children: [
                                     const Icon(
                                       Icons.error_outline,
-                                      color: _C.error,
+                                      color: AppColors.error,
                                       size: 24,
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Text(
                                         auth.error!,
-                                        style: GoogleFonts.plusJakartaSans(
-                                          color: _C.error,
+                                        style: GoogleFonts.poppins(
+                                          color: AppColors.error,
                                           fontSize: 14,
                                           fontWeight: FontWeight.w600,
                                         ),
@@ -554,12 +544,12 @@ class _LoginScreenState extends State<LoginScreen>
                             // Footer: di bawah tombol
                             const SizedBox(height: 32),
                             Text(
-                              'Aplikasi Resmi Operasional BBM © 2026 PT PLN Nusantara Power',
+                              'Aplikasi Resmi ${AppStrings.appName} © 2026 ${AppStrings.companyName}',
                               textAlign: TextAlign.center,
-                              style: GoogleFonts.plusJakartaSans(
+                              style: GoogleFonts.poppins(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
-                                color: _C.slate400,
+                                color: AppColors.textMuted,
                               ),
                             ),
                           ],

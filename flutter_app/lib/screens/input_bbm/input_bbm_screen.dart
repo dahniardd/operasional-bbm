@@ -5,9 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
-import '../../config/app_colors.dart';
-import '../../config/pln_colors.dart';
-import '../../config/theme.dart';
+import '../../config/app_theme.dart';
 import '../../models/pemakaian_bbm.dart';
 import '../../providers/harga_bbm_provider.dart';
 import '../../providers/master_data_provider.dart';
@@ -202,10 +200,10 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
               ),
               title: Text(
                 'Ambil dari Kamera',
-                style: GoogleFonts.inter(
+                style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textPrimary,
+                  color: AppColors.textPrimary,
                 ),
               ),
               onTap: () => Navigator.of(sheetContext).pop(ImageSource.camera),
@@ -217,10 +215,10 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
               ),
               title: Text(
                 'Pilih dari Galeri',
-                style: GoogleFonts.inter(
+                style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textPrimary,
+                  color: AppColors.textPrimary,
                 ),
               ),
               onTap: () => Navigator.of(sheetContext).pop(ImageSource.gallery),
@@ -328,7 +326,7 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
   }
 
   void _showSuccessDialog() {
-    final hijauGelap = Color.lerp(PlnColors.success, Colors.black, 0.28)!;
+    final hijauGelap = Color.lerp(AppColors.success, Colors.black, 0.28)!;
 
     showGeneralDialog<void>(
       context: context,
@@ -344,7 +342,7 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
             constraints: const BoxConstraints(maxWidth: 340),
             padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
             decoration: BoxDecoration(
-              color: PlnColors.surface,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
@@ -367,11 +365,11 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [PlnColors.success, hijauGelap],
+                      colors: [AppColors.success, hijauGelap],
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: PlnColors.success.withValues(alpha: 0.32),
+                        color: AppColors.success.withValues(alpha: 0.32),
                         blurRadius: 16,
                         offset: const Offset(0, 8),
                       ),
@@ -390,7 +388,7 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.3,
-                    color: PlnColors.textPrimary,
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -400,7 +398,7 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 13,
                     fontWeight: FontWeight.w400,
-                    color: PlnColors.textSecondary,
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 26),
@@ -420,12 +418,12 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [PlnColors.primaryBlue, PlnColors.darkNavy],
+                          colors: [AppColors.primary, AppColors.darkNavy],
                         ),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: PlnColors.primaryBlue.withValues(alpha: 0.3),
+                            color: AppColors.primary.withValues(alpha: 0.3),
                             blurRadius: 12,
                             offset: const Offset(0, 6),
                           ),
@@ -642,7 +640,7 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                             Expanded(
                               child: Text(
                                 _totalError!,
-                                style: GoogleFonts.inter(
+                                style: GoogleFonts.poppins(
                                   fontSize: 12,
                                   color: AppColors.danger,
                                 ),
@@ -657,15 +655,15 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                           Icon(
                             Icons.price_check_outlined,
                             size: 14,
-                            color: AppColors.slateBlue.withValues(alpha: 0.7),
+                            color: AppColors.textSecondary.withValues(alpha: 0.7),
                           ),
                           const SizedBox(width: 5),
                           Text(
                             'Harga per liter: '
                             '${formatRupiah(_hargaPerLiter)}',
-                            style: GoogleFonts.inter(
+                            style: GoogleFonts.poppins(
                               fontSize: 12,
-                              color: AppColors.slateBlue,
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ],
@@ -677,16 +675,18 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                           Icon(
                             Icons.info_outline,
                             size: 14,
-                            color: AppColors.slateBlue.withValues(alpha: 0.7),
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.7,
+                            ),
                           ),
                           const SizedBox(width: 5),
                           Expanded(
                             child: Text(
                               'Liter dihitung otomatis dari Total Harga '
                               'dibagi Harga per Liter.',
-                              style: GoogleFonts.inter(
+                              style: GoogleFonts.poppins(
                                 fontSize: 12,
-                                color: AppColors.slateBlue,
+                                color: AppColors.textSecondary,
                               ),
                             ),
                           ),
@@ -707,10 +707,9 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                           ? null
                           : _submit,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: PlnColors.primaryBlue,
-                        disabledBackgroundColor: AppColors.slateBlue.withValues(
-                          alpha: 0.3,
-                        ),
+                        backgroundColor: AppColors.primary,
+                        disabledBackgroundColor: AppColors.textSecondary
+                            .withValues(alpha: 0.3),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
@@ -732,7 +731,7 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                               children: [
                                 Text(
                                   'KONFIRMASI & SIMPAN',
-                                  style: GoogleFonts.inter(
+                                  style: GoogleFonts.poppins(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w700,
                                     letterSpacing: 0.5,
@@ -756,7 +755,7 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                       child: Text(
                         'Harga BBM untuk tanggal dan jenis ini belum tersedia.',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
+                        style: GoogleFonts.poppins(
                           fontSize: 12,
                           color: AppColors.danger,
                         ),
@@ -769,10 +768,10 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                       onPressed: () => Navigator.of(context).maybePop(),
                       child: Text(
                         'Batal',
-                        style: GoogleFonts.inter(
+                        style: GoogleFonts.poppins(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.slateBlue,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ),
@@ -795,7 +794,10 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
       children: [
         Text(
           'Opsional. Lampirkan foto struk atau bukti pengisian BBM.',
-          style: GoogleFonts.inter(fontSize: 12, color: AppColors.slateBlue),
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: AppColors.textSecondary,
+          ),
         ),
         const SizedBox(height: 12),
         if (!hasFoto)
@@ -829,19 +831,19 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                   const SizedBox(height: 8),
                   Text(
                     _pickingFoto ? 'Memproses foto...' : 'Tambah Foto Bukti',
-                    style: GoogleFonts.inter(
+                    style: GoogleFonts.poppins(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.darkTeal,
+                      color: AppColors.darkNavy,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     'Ambil dari kamera atau pilih dari galeri',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
+                    style: GoogleFonts.poppins(
                       fontSize: 11,
-                      color: AppColors.slateBlue,
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],
@@ -894,7 +896,7 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.secondary,
+        color: AppColors.darkNavy,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         boxShadow: AppTheme.cardShadow,
       ),
@@ -903,7 +905,7 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
         children: [
           Text(
             'TOTAL SEMENTARA',
-            style: GoogleFonts.inter(
+            style: GoogleFonts.poppins(
               fontSize: 12,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.6,
@@ -920,7 +922,7 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
             children: [
               Text(
                 'Jumlah',
-                style: GoogleFonts.inter(
+                style: GoogleFonts.poppins(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: Colors.white.withValues(alpha: 0.75),
@@ -928,7 +930,7 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
               ),
               Text(
                 formatRupiah(_total),
-                style: GoogleFonts.inter(
+                style: GoogleFonts.poppins(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
@@ -947,14 +949,14 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(
+          style: GoogleFonts.poppins(
             fontSize: 12.5,
             color: Colors.white.withValues(alpha: 0.75),
           ),
         ),
         Text(
           value,
-          style: GoogleFonts.inter(
+          style: GoogleFonts.poppins(
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color: Colors.white,
@@ -1015,7 +1017,7 @@ class _LokasiPembelianOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground = selected ? Colors.white : AppColors.slateBlue;
+    final foreground = selected ? Colors.white : AppColors.textSecondary;
 
     return Semantics(
       button: true,
@@ -1033,12 +1035,12 @@ class _LokasiPembelianOption extends StatelessWidget {
             decoration: BoxDecoration(
               color: selected
                   ? AppColors.primary
-                  : AppColors.slateBlue.withValues(alpha: 0.06),
+                  : AppColors.textSecondary.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(AppTheme.radiusMd),
               border: Border.all(
                 color: selected
                     ? AppColors.primary
-                    : AppColors.slateBlue.withValues(alpha: 0.3),
+                    : AppColors.textSecondary.withValues(alpha: 0.3),
                 width: selected ? 2 : 1,
               ),
               boxShadow: selected
@@ -1060,7 +1062,7 @@ class _LokasiPembelianOption extends StatelessWidget {
                   child: Text(
                     label,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: GoogleFonts.poppins(
                       fontSize: 13,
                       fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                       color: foreground,
@@ -1122,7 +1124,9 @@ class _HargaPerLiterBox extends StatelessWidget {
                   'Harga per Liter',
                   style: TextStyle(
                     fontSize: 11,
-                    color: available ? AppColors.slateBlue : AppColors.danger,
+                    color: available
+                        ? AppColors.textSecondary
+                        : AppColors.danger,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -1133,7 +1137,7 @@ class _HargaPerLiterBox extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: available ? AppColors.darkTeal : AppColors.danger,
+                    color: available ? AppColors.darkNavy : AppColors.danger,
                   ),
                 ),
               ],

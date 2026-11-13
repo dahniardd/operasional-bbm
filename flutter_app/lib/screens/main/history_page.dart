@@ -5,53 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../config/pln_colors.dart';
+import '../../config/app_theme.dart';
 import '../../services/api_service.dart';
+import '../../utils/display_format.dart';
+import '../../widgets/pln_header_shell.dart';
+import '../../utils/formatters.dart';
 import 'profile_screen.dart';
 
 // ============================================================
 // Helper format
 // ============================================================
-
-const _bulan = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-  'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
-];
-
-String _rp(num v) {
-  final s = v.round().abs().toString();
-  final b = StringBuffer();
-  for (var i = 0; i < s.length; i++) {
-    if (i > 0 && (s.length - i) % 3 == 0) b.write('.');
-    b.write(s[i]);
-  }
-  return '${v < 0 ? '-' : ''}Rp $b';
-}
-
-String _liter(num v) => v.toStringAsFixed(2).replaceAll('.', ',');
-
-/// '2026-09-14' -> '14 Sep 2026'
-/// Aman terhadap nilai kosong (null) dari API: tampil '-'.
-String _tgl(dynamic value) {
-  final raw = (value ?? '').toString();
-  if (raw.isEmpty) return '-';
-  final iso = raw.length >= 10 ? raw.substring(0, 10) : raw;
-  final p = iso.split('-');
-  if (p.length != 3) return raw;
-  final m = int.tryParse(p[1]) ?? 0;
-  if (m < 1 || m > 12) return raw;
-  return '${int.tryParse(p[2]) ?? p[2]} ${_bulan[m - 1]} ${p[0]}';
-}
-
-/// 'luar_paiton' -> 'Luar Paiton'. Nilai kosong (null) tampil '-'.
-String _title(dynamic value) {
-  final s = (value ?? '').toString();
-  if (s.isEmpty) return '-';
-  return s
-      .split('_')
-      .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
-      .join(' ');
-}
 
 String _errorMessage(Object e) {
   if (e is DioException) {
@@ -73,9 +36,18 @@ TextStyle _poppins(double size, FontWeight w, Color c, {double? ls}) =>
       letterSpacing: ls,
     );
 
-const _bgBiru = Color(0xFFE8F4FF);
-const _bgHijau = Color(0xFFE8F9F5);
-const _bgKuning = Color(0xFFFEF3E2);
+const _bgBiru = AppColors.primarySoft;
+const _bgHijau = AppColors.successSoft;
+const _bgKuning = AppColors.warningSoft;
+
+// Warna teks untuk chip/kartu berlatar pastel. Warna status bawaan
+// (success/warning/textSecondary) terlalu terang di atas latar ini:
+//   success   di atas _bgHijau  = 3,03:1 -> _fgHijau  = 4,61:1
+//   warning   di atas _bgKuning = 1,96:1 -> _fgKuning = 4,58:1
+//   textSecondary di atas _bgBiru = 4,26:1 -> _fgAbu  = di atas 7:1
+const _fgHijau = Color(0xFF15803D);
+const _fgKuning = Color(0xFFB45309);
+const _fgAbu = Color(0xFF475569);
 
 // ============================================================
 // Halaman Riwayat: dua slide (Saya / Driver lain)
@@ -142,12 +114,17 @@ class _HistoryPageState extends State<HistoryPage> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Container(
-        color: PlnColors.background,
+        color: AppColors.background,
         child: Column(
           children: [
-            _RiwayatHeader(
+            PlnHeaderShell(
               onProfileTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              ),
+              child: const PlnHeaderTitle(
+                icon: Icons.history_rounded,
+                title: 'Riwayat Pengisian',
+                subtitle: 'Geser untuk melihat data driver lain',
               ),
             ),
             _SlideSwitch(page: _page, onTab: _goTo),
@@ -209,6 +186,10 @@ class _PemakaianListState extends State<_PemakaianList>
   bool _loading = true;
   String? _error;
 
+  /// Penanda permintaan terbaru: respons lama (mis. saat mengetik cepat atau
+  /// ganti filter) diabaikan supaya tidak menimpa hasil yang lebih baru.
+  int _reqId = 0;
+
   bool get _mine => widget.scope == 'mine';
 
   @override
@@ -249,8 +230,10 @@ class _PemakaianListState extends State<_PemakaianList>
         _error = null;
       });
     }
+    final req = ++_reqId;
     try {
       final body = await _fetch(page);
+      if (req != _reqId) return;
       final data = (body['data'] as List).cast<Map<String, dynamic>>();
       final meta = body['meta'] as Map;
 
@@ -268,13 +251,13 @@ class _PemakaianListState extends State<_PemakaianList>
         _page = page;
         _lastPage = (meta['last_page'] as num).toInt();
         _total = (meta['total'] as num).toInt();
-        _totalRp = ((meta['total_jumlah'] ?? 0) as num).toDouble();
-        _totalLiter = ((meta['total_liter'] ?? 0) as num).toDouble();
+        _totalRp = asDouble(meta['total_jumlah']);
+        _totalLiter = asDouble(meta['total_liter']);
         _loading = false;
         _error = null;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || req != _reqId) return;
       setState(() {
         _error = _errorMessage(e);
         _loading = false;
@@ -312,11 +295,11 @@ class _PemakaianListState extends State<_PemakaianList>
       context: context,
       builder: (_) => AlertDialog(
         title: Text('Hapus Transaksi',
-            style: _poppins(16, FontWeight.w700, PlnColors.textPrimary)),
+            style: _poppins(16, FontWeight.w700, AppColors.textPrimary)),
         content: Text(
-          'Pemakaian ${m['plat_nomor']} tanggal ${_tgl(m['tanggal'])} '
-          '(${_rp(m['jumlah'] as num)}) akan dihapus dan tidak bisa dikembalikan.',
-          style: _poppins(13, FontWeight.w400, PlnColors.textSecondary),
+          'Pemakaian ${m['plat_nomor']} tanggal ${fmtTgl(m['tanggal'])} '
+          '(${formatRupiah(asDouble(m['jumlah']))}) akan dihapus dan tidak bisa dikembalikan.',
+          style: _poppins(13, FontWeight.w400, AppColors.textSecondary),
         ),
         actions: [
           TextButton(
@@ -326,7 +309,7 @@ class _PemakaianListState extends State<_PemakaianList>
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Hapus',
-                style: TextStyle(color: PlnColors.danger)),
+                style: TextStyle(color: AppColors.danger)),
           ),
         ],
       ),
@@ -340,14 +323,14 @@ class _PemakaianListState extends State<_PemakaianList>
       _load(silent: true, page: _page);
     } catch (e) {
       if (!mounted) return;
-      _snack(_errorMessage(e), color: PlnColors.danger);
+      _snack(_errorMessage(e), color: AppColors.danger);
     }
   }
 
   void _detail(Map<String, dynamic> m) {
-    final liter = (m['liter'] as num).toDouble();
-    final rp = (m['rp'] as num).toDouble();
-    final jumlah = (m['jumlah'] as num).toDouble();
+    final liter = asDouble(m['liter']);
+    final rp = asDouble(m['rp']);
+    final jumlah = asDouble(m['jumlah']);
     final paiton = m['lokasi_pembelian'] == 'paiton';
     final pencatat = (m['pencatat'] ?? '-').toString();
     final fotoUrl = (m['bukti_bbm_url'] ?? '').toString();
@@ -381,16 +364,16 @@ class _PemakaianListState extends State<_PemakaianList>
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: PlnColors.primaryBlue.withValues(alpha: 0.08),
+                color: AppColors.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, size: 16, color: PlnColors.primaryBlue),
+              child: Icon(icon, size: 16, color: AppColors.primary),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(label,
                   style: _poppins(
-                      12, FontWeight.w500, PlnColors.textSecondary)),
+                      12, FontWeight.w500, AppColors.textSecondary)),
             ),
             Text(
               value,
@@ -398,7 +381,7 @@ class _PemakaianListState extends State<_PemakaianList>
                 13,
                 FontWeight.w600,
                 warnaNilai ??
-                    (redup ? PlnColors.textSecondary : PlnColors.textPrimary),
+                    (redup ? AppColors.textSecondary : AppColors.textPrimary),
               ),
             ),
           ],
@@ -410,16 +393,16 @@ class _PemakaianListState extends State<_PemakaianList>
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
           decoration: BoxDecoration(
-            color: PlnColors.background,
+            color: AppColors.background,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: PlnColors.border),
+            border: Border.all(color: AppColors.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(judul,
                   style: _poppins(
-                      13, FontWeight.w700, PlnColors.textPrimary)),
+                      13, FontWeight.w700, AppColors.textPrimary)),
               const SizedBox(height: 4),
               ...isi,
             ],
@@ -429,7 +412,7 @@ class _PemakaianListState extends State<_PemakaianList>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: PlnColors.surface,
+      backgroundColor: AppColors.surface,
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.92,
       ),
@@ -449,7 +432,7 @@ class _PemakaianListState extends State<_PemakaianList>
                     width: 44,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: PlnColors.border,
+                      color: AppColors.border,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -463,11 +446,11 @@ class _PemakaianListState extends State<_PemakaianList>
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: PlnColors.primaryBlue.withValues(alpha: 0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(Icons.directions_car_filled_outlined,
-                          color: PlnColors.primaryBlue, size: 26),
+                          color: AppColors.primary, size: 26),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -476,7 +459,7 @@ class _PemakaianListState extends State<_PemakaianList>
                         children: [
                           Text(m['plat_nomor'] ?? '-',
                               style: _poppins(
-                                  20, FontWeight.w700, PlnColors.textPrimary,
+                                  20, FontWeight.w700, AppColors.textPrimary,
                                   ls: -0.4)),
                           const SizedBox(height: 4),
                           Wrap(
@@ -487,7 +470,7 @@ class _PemakaianListState extends State<_PemakaianList>
                               if (sub.isNotEmpty)
                                 Text(sub,
                                     style: _poppins(12, FontWeight.w400,
-                                        PlnColors.textSecondary)),
+                                        AppColors.textSecondary)),
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 10, vertical: 3),
@@ -496,13 +479,10 @@ class _PemakaianListState extends State<_PemakaianList>
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
-                                  _title(m['lokasi_pembelian']),
-                                  style: _poppins(
-                                      11,
+                                  fmtTitle(m['lokasi_pembelian']),
+                                  style: _poppins(12,
                                       FontWeight.w600,
-                                      paiton
-                                          ? PlnColors.success
-                                          : PlnColors.warning),
+                                      paiton ? _fgHijau : _fgKuning),
                                 ),
                               ),
                             ],
@@ -513,7 +493,7 @@ class _PemakaianListState extends State<_PemakaianList>
                     const SizedBox(width: 8),
                     // Tombol tutup (X) di ujung kanan atas
                     Material(
-                      color: PlnColors.background,
+                      color: AppColors.background,
                       shape: const CircleBorder(),
                       child: InkWell(
                         customBorder: const CircleBorder(),
@@ -521,7 +501,7 @@ class _PemakaianListState extends State<_PemakaianList>
                         child: Padding(
                           padding: const EdgeInsets.all(8),
                           child: Icon(Icons.close_rounded,
-                              size: 20, color: PlnColors.textSecondary),
+                              size: 20, color: AppColors.textSecondary),
                         ),
                       ),
                     ),
@@ -537,12 +517,12 @@ class _PemakaianListState extends State<_PemakaianList>
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [PlnColors.primaryBlue, PlnColors.darkNavy],
+                      colors: [AppColors.primary, AppColors.darkNavy],
                     ),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: PlnColors.primaryBlue.withValues(alpha: 0.28),
+                        color: AppColors.primary.withValues(alpha: 0.28),
                         blurRadius: 18,
                         offset: const Offset(0, 8),
                       ),
@@ -557,7 +537,7 @@ class _PemakaianListState extends State<_PemakaianList>
                               FontWeight.w500,
                               Colors.white.withValues(alpha: 0.8))),
                       const SizedBox(height: 4),
-                      Text(_rp(jumlah),
+                      Text(formatRupiah(jumlah),
                           style: _poppins(28, FontWeight.w800, Colors.white,
                               ls: -0.6)),
                       const SizedBox(height: 14),
@@ -566,11 +546,11 @@ class _PemakaianListState extends State<_PemakaianList>
                         runSpacing: 8,
                         children: [
                           chipGelap(Icons.calendar_today_outlined,
-                              _tgl(m['tanggal'])),
+                              fmtTgl(m['tanggal'])),
                           chipGelap(Icons.local_gas_station_outlined,
-                              '${_liter(liter)} L'),
+                              '${formatLiter(liter)} L'),
                           chipGelap(Icons.opacity_outlined,
-                              _title(m['jenis_bbm'])),
+                              fmtTitle(m['jenis_bbm'])),
                         ],
                       ),
                     ],
@@ -581,16 +561,16 @@ class _PemakaianListState extends State<_PemakaianList>
                 // Informasi pembelian
                 kartu('Informasi Pembelian', [
                   baris(Icons.local_gas_station_outlined, 'Jenis BBM',
-                      _title(m['jenis_bbm'])),
+                      fmtTitle(m['jenis_bbm'])),
                   baris(Icons.place_outlined, 'Lokasi pembelian',
-                      _title(m['lokasi_pembelian'])),
+                      fmtTitle(m['lokasi_pembelian'])),
                   baris(Icons.water_drop_outlined, 'Volume',
-                      '${_liter(liter)} L'),
+                      '${formatLiter(liter)} L'),
                   if (liter > 0)
                     baris(Icons.speed_outlined, 'Rata-rata per liter',
-                        _rp(rp / liter)),
-                  baris(Icons.receipt_long_outlined, 'Biaya BBM', _rp(rp),
-                      warnaNilai: PlnColors.primaryBlue),
+                        formatRupiah(rp / liter)),
+                  baris(Icons.receipt_long_outlined, 'Biaya BBM', formatRupiah(rp),
+                      warnaNilai: AppColors.primary),
                 ]),
                 const SizedBox(height: 12),
 
@@ -607,11 +587,11 @@ class _PemakaianListState extends State<_PemakaianList>
                     CircleAvatar(
                       radius: 16,
                       backgroundColor:
-                          PlnColors.primaryBlue.withValues(alpha: 0.12),
+                          AppColors.primary.withValues(alpha: 0.12),
                       child: Text(
                         pencatat.isEmpty ? '?' : pencatat[0].toUpperCase(),
                         style: _poppins(
-                            13, FontWeight.w700, PlnColors.primaryBlue),
+                            13, FontWeight.w700, AppColors.primary),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -620,12 +600,12 @@ class _PemakaianListState extends State<_PemakaianList>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Dicatat oleh',
-                              style: _poppins(10, FontWeight.w400,
-                                  PlnColors.textSecondary)),
+                              style: _poppins(12, FontWeight.w400,
+                                  AppColors.textSecondary)),
                           Text(
                             _mine ? '$pencatat (Anda)' : pencatat,
                             style: _poppins(
-                                13, FontWeight.w600, PlnColors.textPrimary),
+                                13, FontWeight.w600, AppColors.textPrimary),
                           ),
                         ],
                       ),
@@ -646,7 +626,7 @@ class _PemakaianListState extends State<_PemakaianList>
                       label: Text('Hapus Data',
                           style: _poppins(13, FontWeight.w600, Colors.white)),
                       style: FilledButton.styleFrom(
-                        backgroundColor: PlnColors.danger,
+                        backgroundColor: AppColors.danger,
                         minimumSize: const Size.fromHeight(48),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14)),
@@ -667,7 +647,7 @@ class _PemakaianListState extends State<_PemakaianList>
     super.build(context); // wajib untuk AutomaticKeepAliveClientMixin
     return RefreshIndicator(
       onRefresh: () => _load(silent: true, page: _page),
-      color: PlnColors.primaryBlue,
+      color: AppColors.primary,
       backgroundColor: Colors.white,
       child: CustomScrollView(
         controller: _scroll,
@@ -680,7 +660,7 @@ class _PemakaianListState extends State<_PemakaianList>
                 padding: EdgeInsets.symmetric(vertical: 60),
                 child: Center(
                   child: CircularProgressIndicator(
-                      color: PlnColors.primaryBlue, strokeWidth: 3),
+                      color: AppColors.primary, strokeWidth: 3),
                 ),
               ),
             )
@@ -727,14 +707,14 @@ class _PemakaianListState extends State<_PemakaianList>
 
     Widget tombol(String label, IconData icon, bool aktif, VoidCallback onTap,
         {bool ikonKanan = false}) {
-      final warna = aktif ? PlnColors.primaryBlue : PlnColors.border;
+      final warna = aktif ? AppColors.primary : AppColors.border;
       return Expanded(
         child: GestureDetector(
           onTap: aktif ? onTap : null,
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 12),
             decoration: BoxDecoration(
-              color: aktif ? PlnColors.primaryBlue : PlnColors.surface,
+              color: aktif ? AppColors.primary : AppColors.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: warna),
             ),
@@ -744,16 +724,16 @@ class _PemakaianListState extends State<_PemakaianList>
                 if (!ikonKanan)
                   Icon(icon,
                       size: 18,
-                      color: aktif ? Colors.white : PlnColors.border),
+                      color: aktif ? Colors.white : AppColors.border),
                 if (!ikonKanan) const SizedBox(width: 4),
                 Text(label,
                     style: _poppins(12, FontWeight.w600,
-                        aktif ? Colors.white : PlnColors.textSecondary)),
+                        aktif ? Colors.white : AppColors.textSecondary)),
                 if (ikonKanan) const SizedBox(width: 4),
                 if (ikonKanan)
                   Icon(icon,
                       size: 18,
-                      color: aktif ? Colors.white : PlnColors.border),
+                      color: aktif ? Colors.white : AppColors.border),
               ],
             ),
           ),
@@ -766,10 +746,10 @@ class _PemakaianListState extends State<_PemakaianList>
       child: Column(
         children: [
           Text('Menampilkan $dari–$sampai dari $_total transaksi',
-              style: _poppins(11, FontWeight.w500, PlnColors.textSecondary)),
+              style: _poppins(12, FontWeight.w500, AppColors.textSecondary)),
           const SizedBox(height: 4),
           Text('Halaman $_page dari $_lastPage',
-              style: _poppins(12, FontWeight.w700, PlnColors.textPrimary)),
+              style: _poppins(12, FontWeight.w700, AppColors.textPrimary)),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -794,23 +774,23 @@ class _PemakaianListState extends State<_PemakaianList>
         children: [
           TextField(
             onChanged: _onSearch,
-            style: _poppins(14, FontWeight.w400, PlnColors.textPrimary),
+            style: _poppins(14, FontWeight.w400, AppColors.textPrimary),
             decoration: InputDecoration(
               hintText: 'Cari plat nomor atau tanggal…',
               hintStyle:
-                  _poppins(13, FontWeight.w400, PlnColors.textSecondary),
+                  _poppins(13, FontWeight.w400, AppColors.textSecondary),
               prefixIcon: const Icon(Icons.search_rounded,
-                  color: PlnColors.textSecondary),
+                  color: AppColors.textSecondary),
               filled: true,
-              fillColor: PlnColors.surface,
+              fillColor: AppColors.surface,
               contentPadding: const EdgeInsets.symmetric(vertical: 14),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: PlnColors.border),
+                borderSide: const BorderSide(color: AppColors.border),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: PlnColors.primaryBlue),
+                borderSide: const BorderSide(color: AppColors.primary),
               ),
             ),
           ),
@@ -819,8 +799,8 @@ class _PemakaianListState extends State<_PemakaianList>
             width: double.infinity,
             child: Wrap(
               alignment: WrapAlignment.center,
-              spacing: 10,
-              runSpacing: 10,
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 for (final (label, value) in _filters)
                   Builder(builder: (_) {
@@ -834,24 +814,24 @@ class _PemakaianListState extends State<_PemakaianList>
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 22, vertical: 12),
+                            horizontal: 16, vertical: 9),
                         decoration: BoxDecoration(
                           color: aktif
-                              ? PlnColors.primaryBlue
-                              : PlnColors.surface,
+                              ? AppColors.primary
+                              : AppColors.surface,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: aktif
-                                ? PlnColors.primaryBlue
-                                : PlnColors.border,
+                                ? AppColors.primary
+                                : AppColors.border,
                           ),
                         ),
                         child: Text(
                           label,
                           style: _poppins(
-                            14,
+                            12,
                             FontWeight.w600,
-                            aktif ? Colors.white : PlnColors.textSecondary,
+                            aktif ? Colors.white : AppColors.textSecondary,
                           ),
                         ),
                       ),
@@ -866,10 +846,10 @@ class _PemakaianListState extends State<_PemakaianList>
               Expanded(
                 child: _Ringkas(
                   label: 'Total Pengeluaran',
-                  value: _loading ? '—' : _rp(_totalRp),
+                  value: _loading ? '—' : formatRupiah(_totalRp),
                   note: _loading ? '' : '$_total transaksi',
                   icon: Icons.attach_money,
-                  warna: PlnColors.primaryBlue,
+                  warna: AppColors.primary,
                   latar: _bgBiru,
                 ),
               ),
@@ -877,12 +857,11 @@ class _PemakaianListState extends State<_PemakaianList>
               Expanded(
                 child: _Ringkas(
                   label: 'Total Liter',
-                  value: _loading
-                      ? '—'
-                      : '${_totalLiter.toStringAsFixed(1).replaceAll('.', ',')} L',
+                  value: _loading ? '—' : '${formatLiter(_totalLiter)} L',
                   note: _mine ? 'milik Anda' : 'hanya dilihat',
                   icon: Icons.local_gas_station,
-                  warna: PlnColors.success,
+                  warna: AppColors.success,
+                  teks: _fgHijau,
                   latar: _bgHijau,
                 ),
               ),
@@ -910,23 +889,23 @@ class _PemakaianListState extends State<_PemakaianList>
         width: double.infinity,
         padding: const EdgeInsets.all(40),
         decoration: BoxDecoration(
-          color: PlnColors.surface,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: PlnColors.border),
+          border: Border.all(color: AppColors.border),
         ),
         child: Column(
           children: [
-            const Icon(Icons.inbox_outlined, size: 48, color: PlnColors.border),
+            const Icon(Icons.inbox_outlined, size: 48, color: AppColors.border),
             const SizedBox(height: 12),
             Text(pesan,
                 textAlign: TextAlign.center,
                 style:
-                    _poppins(14, FontWeight.w500, PlnColors.textSecondary)),
+                    _poppins(14, FontWeight.w500, AppColors.textSecondary)),
             const SizedBox(height: 8),
             Text(sub,
                 textAlign: TextAlign.center,
                 style:
-                    _poppins(12, FontWeight.w400, PlnColors.textSecondary)),
+                    _poppins(12, FontWeight.w400, AppColors.textSecondary)),
           ],
         ),
       ),
@@ -940,24 +919,24 @@ class _PemakaianListState extends State<_PemakaianList>
         width: double.infinity,
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: PlnColors.surface,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: PlnColors.border),
+          border: Border.all(color: AppColors.border),
         ),
         child: Column(
           children: [
             const Icon(Icons.cloud_off_outlined,
-                size: 44, color: PlnColors.danger),
+                size: 44, color: AppColors.danger),
             const SizedBox(height: 12),
             Text(_error!,
                 textAlign: TextAlign.center,
                 style:
-                    _poppins(13, FontWeight.w400, PlnColors.textSecondary)),
+                    _poppins(13, FontWeight.w400, AppColors.textSecondary)),
             const SizedBox(height: 16),
             FilledButton(
               onPressed: () => _load(page: _page),
               style: FilledButton.styleFrom(
-                  backgroundColor: PlnColors.primaryBlue),
+                  backgroundColor: AppColors.primary),
               child: const Text('Coba Lagi'),
             ),
           ],
@@ -975,6 +954,9 @@ class _Ringkas extends StatelessWidget {
   final String label, value, note;
   final IconData icon;
   final Color warna, latar;
+
+  /// Warna teks catatan; kalau kosong memakai [warna].
+  final Color? teks;
   const _Ringkas({
     required this.label,
     required this.value,
@@ -982,6 +964,7 @@ class _Ringkas extends StatelessWidget {
     required this.icon,
     required this.warna,
     required this.latar,
+    this.teks,
   });
 
   @override
@@ -1004,19 +987,18 @@ class _Ringkas extends StatelessWidget {
             child: Icon(icon, size: 18, color: warna),
           ),
           const SizedBox(height: 10),
-          Text(label,
-              style: _poppins(11, FontWeight.w500, PlnColors.textSecondary)),
+          Text(label, style: _poppins(12, FontWeight.w500, _fgAbu)),
           const SizedBox(height: 2),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: Text(value,
-                style: _poppins(16, FontWeight.w700, PlnColors.textPrimary,
+                style: _poppins(16, FontWeight.w700, AppColors.textPrimary,
                     ls: -0.3)),
           ),
           if (note.isNotEmpty) ...[
             const SizedBox(height: 2),
-            Text(note, style: _poppins(11, FontWeight.w500, warna)),
+            Text(note, style: _poppins(12, FontWeight.w500, teks ?? warna)),
           ],
         ],
       ),
@@ -1040,7 +1022,7 @@ class _Kartu extends StatelessWidget {
           color: bg,
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Text(t, style: _poppins(11, FontWeight.w600, fg)),
+        child: Text(t, style: _poppins(12, FontWeight.w600, fg)),
       );
 
   Widget _chipFoto() => Container(
@@ -1052,10 +1034,10 @@ class _Kartu extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.image_outlined, size: 13, color: PlnColors.primaryBlue),
+            Icon(Icons.image_outlined, size: 13, color: AppColors.primary),
             const SizedBox(width: 4),
             Text('Foto',
-                style: _poppins(11, FontWeight.w600, PlnColors.primaryBlue)),
+                style: _poppins(12, FontWeight.w600, AppColors.primary)),
           ],
         ),
       );
@@ -1068,9 +1050,9 @@ class _Kartu extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: PlnColors.surface,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: PlnColors.border),
+        border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -1096,11 +1078,11 @@ class _Kartu extends StatelessWidget {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: PlnColors.primaryBlue.withValues(alpha: 0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(Icons.local_gas_station,
-                          color: PlnColors.primaryBlue, size: 22),
+                          color: AppColors.primary, size: 22),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -1109,17 +1091,17 @@ class _Kartu extends StatelessWidget {
                         children: [
                           Text(m['plat_nomor'] ?? '-',
                               style: _poppins(
-                                  14, FontWeight.w600, PlnColors.textPrimary)),
+                                  14, FontWeight.w600, AppColors.textPrimary)),
                           const SizedBox(height: 2),
-                          Text(_tgl(m['tanggal']),
-                              style: _poppins(11, FontWeight.w400,
-                                  PlnColors.textSecondary)),
+                          Text(fmtTgl(m['tanggal']),
+                              style: _poppins(12, FontWeight.w400,
+                                  AppColors.textSecondary)),
                         ],
                       ),
                     ),
-                    Text(_rp(m['jumlah'] as num),
+                    Text(formatRupiah(asDouble(m['jumlah'])),
                         style: _poppins(
-                            14, FontWeight.w700, PlnColors.primaryBlue)),
+                            14, FontWeight.w700, AppColors.primary)),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -1127,43 +1109,41 @@ class _Kartu extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 6,
                   children: [
-                    _chip(_title(m['jenis_bbm']), PlnColors.primaryBlue,
+                    _chip(fmtTitle(m['jenis_bbm']), AppColors.primary,
                         _bgBiru),
                     _chip(
-                      _title(m['lokasi_pembelian']),
-                      paiton ? PlnColors.success : PlnColors.warning,
+                      fmtTitle(m['lokasi_pembelian']),
+                      paiton ? _fgHijau : _fgKuning,
                       paiton ? _bgHijau : _bgKuning,
                     ),
-                    _chip('${_liter(m['liter'] as num)} L',
-                        PlnColors.textSecondary, PlnColors.background),
+                    _chip('${formatLiter(asDouble(m['liter']))} L',
+                        _fgAbu, AppColors.background),
                     if (adaFoto) _chipFoto(),
                   ],
                 ),
                 if (tampilkanPencatat) ...[
                   const SizedBox(height: 12),
-                  const Divider(height: 1, color: PlnColors.border),
+                  const Divider(height: 1, color: AppColors.border),
                   const SizedBox(height: 10),
                   Row(
                     children: [
                       CircleAvatar(
                         radius: 11,
                         backgroundColor:
-                            PlnColors.primaryBlue.withValues(alpha: 0.12),
+                            AppColors.primary.withValues(alpha: 0.12),
                         child: Text(
                           pencatat.isEmpty ? '?' : pencatat[0].toUpperCase(),
-                          style: _poppins(
-                              11, FontWeight.w700, PlnColors.primaryBlue),
+                          style: _poppins(12, FontWeight.w700, AppColors.primary),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text('Dicatat oleh $pencatat',
                             overflow: TextOverflow.ellipsis,
-                            style: _poppins(
-                                11, FontWeight.w500, PlnColors.textSecondary)),
+                            style: _poppins(12, FontWeight.w500, AppColors.textSecondary)),
                       ),
                       const Icon(Icons.chevron_right_rounded,
-                          size: 18, color: PlnColors.textSecondary),
+                          size: 18, color: AppColors.textSecondary),
                     ],
                   ),
                 ],
@@ -1184,11 +1164,11 @@ Widget _loadingFoto(BuildContext context, Widget child, ImageChunkEvent? p) {
   if (p == null) return child;
   final total = p.expectedTotalBytes;
   return Container(
-    color: PlnColors.surface,
+    color: AppColors.surface,
     alignment: Alignment.center,
     child: CircularProgressIndicator(
       value: total != null ? p.cumulativeBytesLoaded / total : null,
-      color: PlnColors.primaryBlue,
+      color: AppColors.primary,
       strokeWidth: 3,
     ),
   );
@@ -1221,18 +1201,18 @@ class _BuktiFotoState extends State<_BuktiFoto> {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(vertical: 24),
         decoration: BoxDecoration(
-          color: PlnColors.surface,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: PlnColors.border),
+          border: Border.all(color: AppColors.border),
         ),
         child: Column(
           children: [
             Icon(Icons.image_not_supported_outlined,
-                size: 30, color: PlnColors.border),
+                size: 30, color: AppColors.border),
             const SizedBox(height: 8),
             Text('Tidak ada foto bukti',
                 style:
-                    _poppins(12, FontWeight.w500, PlnColors.textSecondary)),
+                    _poppins(12, FontWeight.w500, AppColors.textSecondary)),
           ],
         ),
       );
@@ -1259,17 +1239,17 @@ class _BuktiFotoState extends State<_BuktiFoto> {
                   fit: BoxFit.cover,
                   loadingBuilder: _loadingFoto,
                   errorBuilder: (_, __, ___) => Container(
-                    color: PlnColors.surface,
+                    color: AppColors.surface,
                     alignment: Alignment.center,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.broken_image_outlined,
-                            size: 36, color: PlnColors.textSecondary),
+                            size: 36, color: AppColors.textSecondary),
                         const SizedBox(height: 8),
                         Text('Foto tidak dapat dimuat',
                             style: _poppins(12, FontWeight.w500,
-                                PlnColors.textSecondary)),
+                                AppColors.textSecondary)),
                         TextButton(
                           onPressed: () => setState(() => _percobaan++),
                           child: const Text('Coba lagi'),
@@ -1296,7 +1276,7 @@ class _BuktiFotoState extends State<_BuktiFoto> {
                           size: 14, color: Colors.white),
                       const SizedBox(width: 6),
                       Text('Perbesar',
-                          style: _poppins(11, FontWeight.w600, Colors.white)),
+                          style: _poppins(12, FontWeight.w600, Colors.white)),
                     ],
                   ),
                 ),
@@ -1358,192 +1338,6 @@ class _FotoViewer extends StatelessWidget {
 }
 
 // ============================================================
-// Header Riwayat (gaya sama dengan header Dashboard)
-// ============================================================
-
-class _RiwayatHeader extends StatelessWidget {
-  final VoidCallback onProfileTap;
-
-  const _RiwayatHeader({required this.onProfileTap});
-
-  Widget _tombolProfil() {
-    return Tooltip(
-      message: 'Profil',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onProfileTap,
-          borderRadius: BorderRadius.circular(9),
-          child: Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(9),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.18),
-                width: 1,
-              ),
-            ),
-            child: Icon(
-              Icons.person_outline_rounded,
-              color: Colors.white.withValues(alpha: 0.9),
-              size: 18,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [PlnColors.primaryBlue, PlnColors.darkNavy],
-        ),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: PlnColors.primaryBlue.withValues(alpha: 0.2),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Hiasan lingkaran (sama dengan Dashboard)
-          Positioned(
-            right: -24,
-            top: -28,
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.05),
-              ),
-            ),
-          ),
-          Positioned(
-            left: -40,
-            bottom: -60,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: PlnColors.accentYellow.withValues(alpha: 0.06),
-              ),
-            ),
-          ),
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
-              child: Column(
-                children: [
-                  // Identitas aplikasi + tombol profil
-                  Row(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(9),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.18),
-                          ),
-                        ),
-                        child: Image.asset(
-                          'assets/images/logo.png',
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => const Icon(
-                            Icons.bolt_rounded,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 9),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'PLN NP',
-                            style: _poppins(10, FontWeight.w600,
-                                Colors.white.withValues(alpha: 0.9)),
-                          ),
-                          Text(
-                            'e-Operasional',
-                            style: _poppins(13, FontWeight.w700, Colors.white),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      _tombolProfil(),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Judul halaman
-                  Row(
-                    children: [
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.18),
-                          ),
-                        ),
-                        child: const Icon(Icons.history_rounded,
-                            color: Colors.white, size: 22),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Riwayat Pengisian',
-                              style: _poppins(18, FontWeight.w700, Colors.white,
-                                  ls: -0.4),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Geser untuk melihat data driver lain',
-                              style: _poppins(11, FontWeight.w400,
-                                  Colors.white.withValues(alpha: 0.7)),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ============================================================
 // Tombol geser: Riwayat Saya / Driver Lain (di bawah header)
 // ============================================================
 
@@ -1563,14 +1357,14 @@ class _SlideSwitch extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: aktif
                 ? LinearGradient(
-                    colors: [PlnColors.primaryBlue, PlnColors.darkNavy],
+                    colors: [AppColors.primary, AppColors.darkNavy],
                   )
                 : null,
             borderRadius: BorderRadius.circular(12),
             boxShadow: aktif
                 ? [
                     BoxShadow(
-                      color: PlnColors.primaryBlue.withValues(alpha: 0.25),
+                      color: AppColors.primary.withValues(alpha: 0.25),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -1582,11 +1376,11 @@ class _SlideSwitch extends StatelessWidget {
             children: [
               Icon(icon,
                   size: 18,
-                  color: aktif ? Colors.white : PlnColors.textSecondary),
+                  color: aktif ? Colors.white : AppColors.textSecondary),
               const SizedBox(width: 6),
               Text(label,
                   style: _poppins(13, FontWeight.w600,
-                      aktif ? Colors.white : PlnColors.textSecondary)),
+                      aktif ? Colors.white : AppColors.textSecondary)),
             ],
           ),
         ),
@@ -1601,9 +1395,9 @@ class _SlideSwitch extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: PlnColors.surface,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: PlnColors.border),
+          border: Border.all(color: AppColors.border),
         ),
         child: Row(
           children: [

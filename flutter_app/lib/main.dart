@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 
-import 'config/theme.dart';
+import 'config/app_strings.dart';
+import 'config/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/harga_bbm_provider.dart';
 import 'providers/master_data_provider.dart';
@@ -28,8 +30,15 @@ class OperasionalBbmApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PemakaianBbmProvider()),
       ],
       child: MaterialApp(
-        title: 'e-BBM',
+        title: AppStrings.appName,
         debugShowCheckedModeBanner: false,
+        locale: const Locale('id', 'ID'),
+        supportedLocales: const [Locale('id', 'ID')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         theme: AppTheme.lightTheme,
         home: const SplashScreen(),
       ),

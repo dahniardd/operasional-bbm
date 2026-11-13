@@ -1,11 +1,11 @@
 {
-    "name": "operasional_bbm",
-    "short_name": "operasional_bbm",
+    "name": "e-Operasional BBM",
+    "short_name": "e-Operasional BBM",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "e-Operasional BBM - PT PLN Nusantara Power",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../config/pln_colors.dart';
+import '../config/app_theme.dart';
 import '../screens/main/profile_screen.dart';
 
 TextStyle _poppins(double size, FontWeight w, Color c, {double? ls}) =>
@@ -42,7 +42,7 @@ class InputStepperHeader extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [PlnColors.primaryBlue, PlnColors.darkNavy],
+            colors: [AppColors.primary, AppColors.darkNavy],
           ),
           borderRadius: const BorderRadius.only(
             bottomLeft: Radius.circular(24),
@@ -50,7 +50,7 @@ class InputStepperHeader extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: PlnColors.primaryBlue.withValues(alpha: 0.2),
+              color: AppColors.primary.withValues(alpha: 0.2),
               blurRadius: 16,
               offset: const Offset(0, 8),
             ),
@@ -84,7 +84,7 @@ class InputStepperHeader extends StatelessWidget {
                   height: 150,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: PlnColors.accentYellow.withValues(alpha: 0.06),
+                    color: AppColors.accentYellow.withValues(alpha: 0.06),
                   ),
                 ),
               ),
@@ -198,28 +198,28 @@ class InputStepperHeader extends StatelessWidget {
                 color: isCompleted
                     ? Colors.white
                     : (isActive
-                          ? PlnColors.accentYellow
+                          ? AppColors.accentYellow
                           : Colors.white.withValues(alpha: 0.12)),
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: isCompleted
                       ? Colors.white
                       : (isActive
-                            ? PlnColors.accentYellow
+                            ? AppColors.accentYellow
                             : Colors.white.withValues(alpha: 0.35)),
                   width: 1.4,
                 ),
               ),
               child: Center(
                 child: isCompleted
-                    ? Icon(Icons.check, size: 14, color: PlnColors.primaryBlue)
+                    ? Icon(Icons.check, size: 14, color: AppColors.primary)
                     : Text(
                         '${stepIdx + 1}',
                         style: _poppins(
                           12,
                           FontWeight.w700,
                           isActive
-                              ? PlnColors.darkNavy
+                              ? AppColors.darkNavy
                               : Colors.white.withValues(alpha: 0.7),
                         ),
                       ),

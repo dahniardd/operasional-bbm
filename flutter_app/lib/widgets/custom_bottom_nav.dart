@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../config/app_colors.dart';
+import '../config/app_theme.dart';
 
 class CustomBottomNav extends StatelessWidget {
   const CustomBottomNav({
@@ -165,7 +165,7 @@ class _NavPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = active ? AppColors.primary : const Color(0xFF6B7280);
+    final color = active ? AppColors.primary : AppColors.textSecondary;
 
     return Semantics(
       button: true,
@@ -213,7 +213,7 @@ class _NavPill extends StatelessWidget {
                 fit: BoxFit.scaleDown,
                 child: AnimatedDefaultTextStyle(
                   duration: const Duration(milliseconds: 180),
-                  style: GoogleFonts.inter(
+                  style: GoogleFonts.poppins(
                     color: color,
                     fontSize: 11.5,
                     fontWeight: active ? FontWeight.w700 : FontWeight.w500,

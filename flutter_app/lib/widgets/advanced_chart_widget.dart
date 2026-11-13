@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../config/pln_colors.dart';
+
+import '../config/design_tokens.dart';
 import '../models/pemakaian_bbm.dart';
 
-/// Advanced Chart Widget dengan period selector dan animasi
+/// Grafik pemakaian BBM dengan filter periode dan metrik.
+///
+/// Ringkasan angka tidak ditampilkan di sini agar tidak duplikat dengan
+/// kartu ringkasan server di dashboard.
 class AdvancedChartWidget extends StatefulWidget {
   final List<PemakaianBbm> pemakaianList;
 
@@ -59,7 +63,6 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
     final today = DateTime(now.year, now.month, now.day);
     List<PemakaianBbm> filteredData = [];
     String periodLabel = '';
-    int daysSpan = 7;
 
     switch (_selectedPeriod) {
       case '7days':
@@ -68,7 +71,6 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
             .where((item) => !_dateOnly(item.tanggal).isBefore(start))
             .toList();
         periodLabel = 'Terakhir 7 Hari';
-        daysSpan = 7;
         break;
       case '30days':
         final start = today.subtract(const Duration(days: 29));
@@ -76,7 +78,6 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
             .where((item) => !_dateOnly(item.tanggal).isBefore(start))
             .toList();
         periodLabel = 'Terakhir 30 Hari';
-        daysSpan = 30;
         break;
       case 'month':
         filteredData = widget.pemakaianList
@@ -87,28 +88,10 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
             )
             .toList();
         periodLabel = 'Bulan ${DateFormat('MMMM', 'id_ID').format(now)}';
-        daysSpan = now.day;
         break;
     }
 
-    final totalLiter = filteredData.fold<double>(
-      0,
-      (sum, item) => sum + item.liter,
-    );
-    final totalCost = filteredData.fold<double>(
-      0,
-      (sum, item) => sum + item.jumlah,
-    );
-    final avgDaily = daysSpan <= 0 ? 0.0 : totalLiter / daysSpan;
-
-    return {
-      'data': filteredData,
-      'totalLiter': totalLiter,
-      'totalCost': totalCost,
-      'avgDaily': avgDaily,
-      'count': filteredData.length,
-      'periodLabel': periodLabel,
-    };
+    return {'data': filteredData, 'periodLabel': periodLabel};
   }
 
   DateTime _dateOnly(DateTime date) =>
@@ -177,222 +160,170 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
   Widget build(BuildContext context) {
     final chartData = _calculateChartData();
     final data = chartData['data'] as List<PemakaianBbm>;
-    final totalLiter = chartData['totalLiter'] as double;
-    final totalCost = chartData['totalCost'] as double;
-    final avgDaily = chartData['avgDaily'] as double;
     final periodLabel = chartData['periodLabel'] as String;
     final bars = _buildBars(data);
+    final hasAnyData = widget.pemakaianList.isNotEmpty;
     final hasPeriodData = bars.any((bar) => bar.value > 0);
+    final textScale = MediaQuery.textScalerOf(
+      context,
+    ).scale(1).clamp(1.0, 1.6).toDouble();
 
     return ScaleTransition(
       scale: _scaleAnimation,
       child: Container(
         decoration: BoxDecoration(
-          color: PlnColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: PlnColors.border, width: 1),
+          color: AppTokens.surface,
+          borderRadius: BorderRadius.circular(AppTokens.radiusCard),
+          border: Border.all(color: AppTokens.border, width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              blurRadius: AppTokens.space10,
+              offset: const Offset(0, AppTokens.space4),
             ),
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppTokens.space16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Grafik Pemakaian BBM',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: PlnColors.textPrimary,
-                          letterSpacing: -0.3,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Grafik Pemakaian BBM',
+                          style: GoogleFonts.poppins(
+                            fontSize: AppTokens.fontTitle,
+                            fontWeight: FontWeight.w700,
+                            color: AppTokens.textPrimary,
+                            letterSpacing: -0.3,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '$periodLabel • ${_selectedMetric == 'liter' ? 'Liter' : 'Rupiah'}',
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: PlnColors.textSecondary,
+                        const SizedBox(height: AppTokens.space2),
+                        Text(
+                          '$periodLabel • ${_selectedMetric == 'liter' ? 'Liter' : 'Rupiah'}',
+                          style: GoogleFonts.poppins(
+                            fontSize: AppTokens.fontCaption,
+                            fontWeight: FontWeight.w500,
+                            color: AppTokens.textSecondary,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                  // Icon
+                  const SizedBox(width: AppTokens.space8),
                   Container(
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(
-                      color: PlnColors.primaryBlue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
+                      color: AppTokens.brand.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppTokens.radiusMd),
                     ),
                     child: const Icon(
                       Icons.bar_chart_rounded,
-                      color: PlnColors.primaryBlue,
+                      color: AppTokens.brand,
                       size: 20,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
-
-              // Period selector
-              Container(
-                padding: const EdgeInsets.all(3),
-                decoration: BoxDecoration(
-                  color: PlnColors.background,
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: Row(
-                  children: [
-                    _buildPeriodButton('7 Hari', '7days'),
-                    const SizedBox(width: 3),
-                    _buildPeriodButton('30 Hari', '30days'),
-                    const SizedBox(width: 3),
-                    _buildPeriodButton('Bulan Ini', 'month'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              // Metrik grafik
-              Row(
-                children: [
-                  Text(
-                    'Tampilkan',
-                    style: GoogleFonts.poppins(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                      color: PlnColors.textSecondary,
-                    ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: PlnColors.background,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildMetricButton('Liter', 'liter'),
-                        const SizedBox(width: 2),
-                        _buildMetricButton('Rupiah', 'cost'),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // Chart representation
-              if (!hasPeriodData)
+              if (hasAnyData) ...[
+                const SizedBox(height: AppTokens.space14),
                 Container(
-                  height: 150,
-                  alignment: Alignment.center,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: AppTokens.background,
+                    borderRadius: BorderRadius.circular(AppTokens.radiusSm),
+                  ),
+                  child: Row(
                     children: [
-                      Icon(
-                        Icons.bar_chart_outlined,
-                        size: 40,
-                        color: PlnColors.border,
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'Belum ada data pemakaian BBM',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: PlnColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Grafik akan muncul setelah ada transaksi tercatat.',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          color: PlnColors.textSecondary,
-                        ),
-                      ),
+                      _buildPeriodButton('7 Hari', '7days'),
+                      const SizedBox(width: 3),
+                      _buildPeriodButton('30 Hari', '30days'),
+                      const SizedBox(width: 3),
+                      _buildPeriodButton('Bulan Ini', 'month'),
                     ],
                   ),
-                )
-              else
-                Column(
-                  children: [
-                    _buildBarChart(bars),
-                    const SizedBox(height: 16),
-                    // Stats grid
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildStatItem(
-                            'Total Liter',
-                            '${totalLiter.toStringAsFixed(1)} L',
-                            Icons.local_gas_station,
-                            PlnColors.primaryBlue,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _buildStatItem(
-                            'Total Biaya',
-                            NumberFormat.currency(
-                              locale: 'id_ID',
-                              symbol: 'Rp ',
-                              decimalDigits: 0,
-                            ).format(totalCost),
-                            Icons.attach_money,
-                            PlnColors.accentYellow,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildStatItem(
-                            'Rata-rata/Hari',
-                            '${avgDaily.toStringAsFixed(1)} L',
-                            Icons.trending_up,
-                            PlnColors.success,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _buildStatItem(
-                            'Jumlah Isi',
-                            '${data.length}x',
-                            Icons.receipt_long,
-                            PlnColors.primaryBlue,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
                 ),
+                const SizedBox(height: AppTokens.space10),
+                Text(
+                  'Tampilkan',
+                  style: GoogleFonts.poppins(
+                    fontSize: AppTokens.fontCaption,
+                    fontWeight: FontWeight.w500,
+                    color: AppTokens.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: AppTokens.space6),
+                Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: AppTokens.background,
+                    borderRadius: BorderRadius.circular(AppTokens.radiusSm),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(child: _buildMetricButton('Liter', 'liter')),
+                      const SizedBox(width: 2),
+                      Expanded(child: _buildMetricButton('Rupiah', 'cost')),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppTokens.space12),
+              ] else
+                const SizedBox(height: AppTokens.space14),
+              if (!hasPeriodData)
+                _buildEmptyState(hasAnyData)
+              else
+                _buildBarChart(bars, textScale),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(bool hasAnyData) {
+    return Container(
+      height: 150,
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.bar_chart_outlined,
+            size: 40,
+            color: AppTokens.border,
+          ),
+          const SizedBox(height: AppTokens.space10),
+          Text(
+            hasAnyData
+                ? 'Belum ada data pada periode ini'
+                : 'Belum ada data pemakaian BBM',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              fontSize: AppTokens.fontBody,
+              fontWeight: FontWeight.w600,
+              color: AppTokens.textSecondary,
+            ),
+          ),
+          const SizedBox(height: AppTokens.space4),
+          Text(
+            hasAnyData
+                ? 'Coba pilih periode lain atau catat transaksi baru.'
+                : 'Grafik akan muncul setelah ada transaksi tercatat.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              fontSize: AppTokens.fontCaption,
+              color: AppTokens.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -404,20 +335,29 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
         color: Colors.transparent,
         child: InkWell(
           onTap: () => _selectPeriod(value),
-          borderRadius: BorderRadius.circular(7),
+          borderRadius: BorderRadius.circular(AppTokens.space6),
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 7),
+            constraints: const BoxConstraints(
+              minHeight: AppTokens.minTapTarget,
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTokens.space4,
+              vertical: AppTokens.space6,
+            ),
+            alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: isSelected ? PlnColors.primaryBlue : Colors.transparent,
-              borderRadius: BorderRadius.circular(7),
+              color: isSelected ? AppTokens.brand : Colors.transparent,
+              borderRadius: BorderRadius.circular(AppTokens.space6),
             ),
             child: Text(
               label,
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: GoogleFonts.poppins(
-                fontSize: 11,
+                fontSize: AppTokens.fontCaption,
                 fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : PlnColors.textSecondary,
+                color: isSelected ? AppTokens.onBrand : AppTokens.textSecondary,
               ),
             ),
           ),
@@ -432,20 +372,24 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
       color: Colors.transparent,
       child: InkWell(
         onTap: () => _selectMetric(value),
-        borderRadius: BorderRadius.circular(6),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        borderRadius: BorderRadius.circular(AppTokens.space6),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: AppTokens.minTapTarget),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTokens.space12,
+            vertical: AppTokens.space6,
+          ),
+          alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: isSelected ? PlnColors.primaryBlue : Colors.transparent,
-            borderRadius: BorderRadius.circular(6),
+            color: isSelected ? AppTokens.brand : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppTokens.space6),
           ),
           child: Text(
             label,
             style: GoogleFonts.poppins(
-              fontSize: 10,
+              fontSize: AppTokens.fontCaption,
               fontWeight: FontWeight.w600,
-              color: isSelected ? Colors.white : PlnColors.textSecondary,
+              color: isSelected ? AppTokens.onBrand : AppTokens.textSecondary,
             ),
           ),
         ),
@@ -453,15 +397,20 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
     );
   }
 
-  Widget _buildBarChart(List<_BarData> bars) {
+  Widget _buildBarChart(List<_BarData> bars, double textScale) {
     var maxValue = 0.0;
     for (final bar in bars) {
       if (bar.value > maxValue) maxValue = bar.value;
     }
     if (maxValue <= 0) maxValue = 1;
 
+    final labelHeight = 18 * textScale;
+    final valueHeight = 18 * textScale;
+    final barArea = 96 * textScale;
+    final chartHeight = labelHeight + valueHeight + barArea + 10;
+
     return SizedBox(
-      height: 150,
+      height: chartHeight,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: bars.map((bar) {
@@ -475,51 +424,54 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      _compactValue(bar.value),
-                      style: GoogleFonts.poppins(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
-                        color: isMax
-                            ? PlnColors.primaryBlue
-                            : PlnColors.textSecondary,
-                      ),
-                    ),
+                  SizedBox(
+                    height: valueHeight,
+                    child: isMax
+                        ? Text(
+                            _compactValue(bar.value),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              fontSize: AppTokens.fontCaption,
+                              fontWeight: FontWeight.w600,
+                              color: AppTokens.brand,
+                            ),
+                          )
+                        : null,
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: AppTokens.space4),
                   Container(
-                    height: 100 * ratio + (bar.value > 0 ? 3 : 0),
+                    height: (barArea * ratio)
+                        .clamp(bar.value > 0 ? 3.0 : 0.0, barArea)
+                        .toDouble(),
                     width: double.infinity,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.bottomCenter,
                         end: Alignment.topCenter,
                         colors: [
-                          PlnColors.primaryBlue,
-                          PlnColors.primaryBlue.withValues(
-                            alpha: isMax ? 0.7 : 0.45,
-                          ),
+                          AppTokens.brand,
+                          AppTokens.brand.withValues(alpha: isMax ? 0.7 : 0.45),
                         ],
                       ),
                       borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(6),
+                        top: Radius.circular(AppTokens.space6),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: AppTokens.space6),
                   SizedBox(
-                    height: 14,
+                    height: labelHeight,
                     child: Text(
                       bar.label,
                       textAlign: TextAlign.center,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.poppins(
-                        fontSize: 9,
+                        fontSize: AppTokens.fontCaption,
                         fontWeight: FontWeight.w500,
-                        color: PlnColors.textSecondary,
+                        color: AppTokens.textSecondary,
                       ),
                     ),
                   ),
@@ -549,59 +501,6 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget>
       return '${(value / 1000).toStringAsFixed(1)}rb';
     }
     return value.toStringAsFixed(value >= 10 ? 0 : 1);
-  }
-
-  Widget _buildStatItem(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.15), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 13, color: color),
-              const SizedBox(width: 5),
-              Expanded(
-                child: Text(
-                  label,
-                  style: GoogleFonts.poppins(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    color: PlnColors.textSecondary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 3),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              value,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: color,
-              ),
-              maxLines: 1,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 
