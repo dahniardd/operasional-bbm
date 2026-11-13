@@ -12,6 +12,7 @@ import '../../providers/master_data_provider.dart';
 import '../../providers/pemakaian_bbm_provider.dart';
 import '../../utils/formatters.dart';
 import '../../utils/rupiah_input_formatter.dart';
+import '../../widgets/app_date_picker.dart';
 import '../../widgets/app_snackbar.dart';
 import '../../widgets/input_section_card.dart';
 import '../../widgets/input_stepper_header.dart';
@@ -42,7 +43,9 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
   void initState() {
     super.initState();
     _tanggal = DateTime.now();
-    _tanggalController = TextEditingController(text: formatTanggal(_tanggal));
+    _tanggalController = TextEditingController(
+      text: formatTanggalPanjang(_tanggal),
+    );
     _literController = TextEditingController();
     _totalController = TextEditingController();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadMasters());
@@ -125,11 +128,11 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
       _totalError == null;
 
   Future<void> _pickTanggal() async {
-    final picked = await showDatePicker(
-      context: context,
+    final picked = await showAppDatePicker(
+      context,
       initialDate: _tanggal,
       firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
+      lastDate: DateTime.now(),
     );
 
     if (picked == null) {
@@ -142,7 +145,7 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
 
     setState(() {
       _tanggal = picked;
-      _tanggalController.text = formatTanggal(picked);
+      _tanggalController.text = formatTanggalPanjang(picked);
       _resyncTotal();
     });
   }
@@ -496,8 +499,8 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                         onTap: _pickTanggal,
                         decoration: const InputDecoration(
                           labelText: 'Tanggal Pengisian',
-                          prefixIcon: Icon(Icons.calendar_today_outlined),
-                          suffixIcon: Icon(Icons.arrow_drop_down),
+                          prefixIcon: Icon(Icons.calendar_month_rounded),
+                          suffixIcon: Icon(Icons.expand_more_rounded),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -655,7 +658,9 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
                           Icon(
                             Icons.price_check_outlined,
                             size: 14,
-                            color: AppColors.textSecondary.withValues(alpha: 0.7),
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.7,
+                            ),
                           ),
                           const SizedBox(width: 5),
                           Text(
