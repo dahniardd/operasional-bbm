@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 import '../../config/design_tokens.dart';
 import '../../models/pemakaian_bbm.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/pemakaian_bbm_provider.dart';
 import '../../services/api_service.dart';
 import '../../utils/api_error.dart';
 import '../../utils/display_format.dart';
@@ -50,6 +49,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
   /// driver), sama seperti total di Riwayat, bukan dihitung dari 20 data.
   Map<String, dynamic> _stats = {};
   List<PemakaianBbm> _recent = [];
+  int _chartRefresh = 0;
 
   @override
   bool get wantKeepAlive => true;
@@ -65,6 +65,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
   void didUpdateWidget(covariant DashboardPageAdvanced oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.refreshTick != widget.refreshTick) {
+      _chartRefresh++;
       _loadDashboardData(silent: true);
     }
   }
@@ -115,18 +116,11 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
   Future<void> _loadDashboardData({bool silent = false}) async {
     if (!silent && !_isLoading) setState(() => _isLoading = true);
 
-    final provider = context.read<PemakaianBbmProvider>();
-
-    // Ringkasan (server) dan data grafik (provider) dimuat bersamaan.
-    final results = await Future.wait<Object?>([
-      _fetchRingkasan(),
-      provider.loadPemakaian(reset: true),
-    ]);
+    final error = await _fetchRingkasan();
 
     if (!mounted) return;
     setState(() => _isLoading = false);
 
-    final error = (results[0] as String?) ?? provider.error;
     if (error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -139,6 +133,12 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
     }
   }
 
+  Future<void> _refreshDashboard() async {
+    if (!mounted) return;
+    setState(() => _chartRefresh++);
+    await _loadDashboardData(silent: true);
+  }
+
   @override
   void dispose() {
     _animationController.dispose();
@@ -149,6 +149,8 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
   Widget build(BuildContext context) {
     super.build(context);
 
+    final user = context.watch<AuthProvider>().user;
+    final isDriver = (user?.role ?? '').toLowerCase() == 'driver';
     final stats = _stats;
     final recent = _recent;
 
@@ -159,7 +161,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
         child: Column(
           children: [
             AdvancedHeader(
-              user: context.watch<AuthProvider>().user,
+              user: user,
               onProfileTap: () => Navigator.of(
                 context,
               ).push(MaterialPageRoute(builder: (_) => const ProfileScreen())),
@@ -170,7 +172,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                   : FadeTransition(
                       opacity: _fadeAnimation,
                       child: RefreshIndicator(
-                        onRefresh: () => _loadDashboardData(silent: true),
+                        onRefresh: _refreshDashboard,
                         color: AppTokens.brand,
                         backgroundColor: AppTokens.surface,
                         child: MediaQuery.removePadding(
@@ -195,10 +197,12 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                                           const SizedBox(
                                             height: AppTokens.space12,
                                           ),
-                                          _buildStatsSection(stats),
-                                          const SizedBox(
-                                            height: AppTokens.space16,
-                                          ),
+                                          if (!isDriver) ...[
+                                            _buildStatsSection(stats),
+                                            const SizedBox(
+                                              height: AppTokens.space16,
+                                            ),
+                                          ],
                                           _buildQuickActionsSection(),
                                           const SizedBox(
                                             height: AppTokens.space16,
@@ -327,7 +331,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                       symbol: 'Rp ',
                       decimalDigits: 0,
                     ).format(stats['todayTotal'] ?? 0),
-                    icon: Icons.attach_money,
+                    icon: Icons.payments_rounded,
                     primaryColor: AppTokens.brand,
                     backgroundColor: const Color(0xFFE8F4FF),
                   ),
@@ -414,7 +418,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const InputBbmScreen()),
-                  ).then((_) => _loadDashboardData(silent: true));
+                  ).then((_) => _refreshDashboard());
                 },
               ),
               AdvancedQuickAction(
@@ -435,9 +439,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
   Widget _buildChartSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppTokens.space20),
-      child: AdvancedChartWidget(
-        pemakaianList: context.watch<PemakaianBbmProvider>().items,
-      ),
+      child: AdvancedChartWidget(refreshSignal: _chartRefresh),
     );
   }
 
