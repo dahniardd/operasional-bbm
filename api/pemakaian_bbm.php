@@ -262,6 +262,76 @@ if ($method === 'GET') {
         ]);
     }
 
+    // Grafik dashboard: total liter & rupiah per jenis BBM dalam rentang
+    // tanggal. Dihitung dari SEMUA transaksi (semua driver), bukan dari
+    // halaman data yang sedang dimuat aplikasi.
+    if ($action === 'grafik_jenis') {
+        $dariRaw = (string) ($_GET['dari'] ?? date('Y-m-01'));
+        $sampaiRaw = (string) ($_GET['sampai'] ?? date('Y-m-d'));
+
+        $dariDate = DateTime::createFromFormat('!Y-m-d', $dariRaw);
+        $sampaiDate = DateTime::createFromFormat('!Y-m-d', $sampaiRaw);
+
+        if (
+            !$dariDate || $dariDate->format('Y-m-d') !== $dariRaw
+            || !$sampaiDate || $sampaiDate->format('Y-m-d') !== $sampaiRaw
+        ) {
+            json_response(['message' => 'Format tanggal tidak valid. Gunakan YYYY-MM-DD.'], 422);
+        }
+
+        if ($dariDate > $sampaiDate) {
+            json_response(['message' => 'Tanggal awal tidak boleh melewati tanggal akhir.'], 422);
+        }
+
+        $stmt = $pdo->prepare(
+            "SELECT p.jenis_bbm,
+                    COALESCE(SUM(p.liter), 0) AS total_liter,
+                    COALESCE(SUM(p.jumlah), 0) AS total_jumlah,
+                    COUNT(*) AS total_transaksi
+             FROM pemakaian_bbm p
+             WHERE p.tanggal >= ? AND p.tanggal <= ?
+             GROUP BY p.jenis_bbm"
+        );
+        $stmt->execute([$dariDate->format('Y-m-d'), $sampaiDate->format('Y-m-d')]);
+
+        $byJenis = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $byJenis[$row['jenis_bbm']] = $row;
+        }
+
+        $labels = [
+            'pertamax' => 'Pertamax',
+            'pertadex' => 'Pertadex',
+            'dexlite' => 'Dexlite',
+            'pertamax_turbo' => 'Pertamax Turbo',
+            'solar' => 'Solar',
+        ];
+
+        $items = [];
+        foreach (JENIS_BBM as $jenis) {
+            if (!isset($byJenis[$jenis])) {
+                continue;
+            }
+
+            $row = $byJenis[$jenis];
+            $items[] = [
+                'jenis_bbm' => $jenis,
+                'label' => $labels[$jenis] ?? ucfirst($jenis),
+                'liter' => (float) $row['total_liter'],
+                'jumlah' => (float) $row['total_jumlah'],
+                'transaksi' => (int) $row['total_transaksi'],
+            ];
+        }
+
+        json_response([
+            'data' => [
+                'dari' => $dariDate->format('Y-m-d'),
+                'sampai' => $sampaiDate->format('Y-m-d'),
+                'items' => $items,
+            ],
+        ]);
+    }
+
     if ($id !== null && $id !== '') {
         $row = get_pemakaian_row($pdo, $id);
 

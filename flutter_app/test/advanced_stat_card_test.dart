@@ -67,7 +67,7 @@ void main() {
               child: AdvancedStatCard(
                 label: 'Pengeluaran Hari Ini',
                 value: 'Rp 1.234.567',
-                icon: Icons.attach_money,
+                icon: Icons.payments_rounded,
                 primaryColor: AppTokens.brand,
                 backgroundColor: const Color(0xFFE8F4FF),
               ),

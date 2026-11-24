@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../config/api_config.dart';
+import '../utils/formatters.dart';
 import 'storage_service.dart';
 
 class ApiService {
@@ -186,6 +187,22 @@ class ApiService {
       queryParameters: {
         'action': 'ringkasan',
         if (scope != null && scope.isNotEmpty) 'scope': scope,
+      },
+    );
+  }
+
+  /// Total liter & rupiah per jenis BBM pada rentang tanggal tertentu.
+  /// Dihitung server dari seluruh transaksi (semua driver).
+  Future<Response> getGrafikJenisBbm({
+    required DateTime dari,
+    required DateTime sampai,
+  }) {
+    return _dio.get(
+      '/pemakaian_bbm.php',
+      queryParameters: {
+        'action': 'grafik_jenis',
+        'dari': formatTanggalIso(dari),
+        'sampai': formatTanggalIso(sampai),
       },
     );
   }
