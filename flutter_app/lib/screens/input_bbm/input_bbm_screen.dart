@@ -10,6 +10,7 @@ import '../../models/pemakaian_bbm.dart';
 import '../../providers/harga_bbm_provider.dart';
 import '../../providers/master_data_provider.dart';
 import '../../providers/pemakaian_bbm_provider.dart';
+import '../../utils/blur_detector.dart';
 import '../../utils/formatters.dart';
 import '../../utils/rupiah_input_formatter.dart';
 import '../../widgets/app_date_picker.dart';
@@ -244,6 +245,8 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
       _pickingFoto = true;
     });
 
+    var buram = false;
+
     try {
       final picked = await _imagePicker.pickImage(
         source: source,
@@ -261,10 +264,20 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
         return;
       }
 
-      setState(() {
-        _fotoBytes = bytes;
-        _fotoName = picked.name.isEmpty ? 'bukti_bbm.jpg' : picked.name;
-      });
+      // Foto buram ditolak: tidak disimpan ke _fotoBytes, jadi tidak mungkin
+      // ikut terkirim. Kalau gambar tidak bisa dinilai (null), tetap diterima.
+      if (await BlurDetector.apakahBuram(bytes) == true) {
+        buram = true;
+      } else {
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          _fotoBytes = bytes;
+          _fotoName = picked.name.isEmpty ? 'bukti_bbm.jpg' : picked.name;
+        });
+      }
     } catch (_) {
       if (mounted) {
         AppSnackbar.error(context, 'Gagal mengambil foto. Coba lagi.');
@@ -275,6 +288,62 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
           _pickingFoto = false;
         });
       }
+    }
+
+    if (buram && mounted) {
+      await _dialogFotoBuram(source);
+    }
+  }
+
+  Future<void> _dialogFotoBuram(ImageSource source) async {
+    final ulang = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        ),
+        icon: const Icon(
+          Icons.blur_on_rounded,
+          size: 36,
+          color: AppColors.warning,
+        ),
+        title: Text(
+          'Foto terlalu buram',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        content: Text(
+          'Tulisan pada struk sulit dibaca, jadi foto ini tidak bisa dipakai. '
+          'Pastikan kamera fokus, cahaya cukup, dan tahan HP agar tidak '
+          'bergoyang saat memotret.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(
+              source == ImageSource.camera ? 'Ambil Ulang' : 'Pilih Lagi',
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (ulang == true && mounted) {
+      await _ambilFoto(source);
     }
   }
 
@@ -798,7 +867,8 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
       title: 'Bukti BBM',
       children: [
         Text(
-          'Opsional. Lampirkan foto struk atau bukti pengisian BBM.',
+          'Opsional. Lampirkan foto struk atau bukti pengisian BBM. '
+          'Foto yang buram akan ditolak.',
           style: GoogleFonts.poppins(
             fontSize: 12,
             color: AppColors.textSecondary,

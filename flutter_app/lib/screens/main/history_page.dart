@@ -68,7 +68,14 @@ class _HistoryPageState extends State<HistoryPage> {
   final _othersKey = GlobalKey<_PemakaianListState>();
 
   int _page = 0;
-  bool _isAdmin = false;
+
+  /// Role user login ('admin', 'petugas', 'driver', ...). null = belum dimuat.
+  String? _role;
+  bool get _isAdmin => _role == 'admin';
+
+  /// Kartu ringkasan tidak ditampilkan untuk driver (dan selama role belum
+  /// diketahui, supaya kartu tidak sempat muncul lalu hilang).
+  bool get _showSummary => _role != null && _role != 'driver';
 
   @override
   void initState() {
@@ -95,7 +102,7 @@ class _HistoryPageState extends State<HistoryPage> {
     try {
       final res = await ApiService().getUser();
       final role = res.data['user']?['role'];
-      if (mounted) setState(() => _isAdmin = role == 'admin');
+      if (mounted) setState(() => _role = role?.toString());
     } catch (_) {
       // Tanpa role, hanya tombol hapus yang disembunyikan.
     }
@@ -134,9 +141,17 @@ class _HistoryPageState extends State<HistoryPage> {
                 onPageChanged: (i) => setState(() => _page = i),
                 children: [
                   _PemakaianList(
-                      key: _mineKey, scope: 'mine', isAdmin: _isAdmin),
+                    key: _mineKey,
+                    scope: 'mine',
+                    isAdmin: _isAdmin,
+                    showSummary: _showSummary,
+                  ),
                   _PemakaianList(
-                      key: _othersKey, scope: 'others', isAdmin: _isAdmin),
+                    key: _othersKey,
+                    scope: 'others',
+                    isAdmin: _isAdmin,
+                    showSummary: _showSummary,
+                  ),
                 ],
               ),
             ),
@@ -155,7 +170,15 @@ class _PemakaianList extends StatefulWidget {
   /// 'mine' = milik user login, 'others' = driver lain (hanya lihat).
   final String scope;
   final bool isAdmin;
-  const _PemakaianList({super.key, required this.scope, required this.isAdmin});
+
+  /// false = sembunyikan kartu ringkasan (mis. untuk role driver).
+  final bool showSummary;
+  const _PemakaianList({
+    super.key,
+    required this.scope,
+    required this.isAdmin,
+    this.showSummary = true,
+  });
 
   @override
   State<_PemakaianList> createState() => _PemakaianListState();
@@ -567,7 +590,7 @@ class _PemakaianListState extends State<_PemakaianList>
                   baris(Icons.water_drop_outlined, 'Volume',
                       '${formatLiter(liter)} L'),
                   if (liter > 0)
-                    baris(Icons.speed_outlined, 'Rata-rata per liter',
+                    baris(Icons.speed_outlined, 'Harga per liter',
                         formatRupiah(rp / liter)),
                   baris(Icons.receipt_long_outlined, 'Biaya BBM', formatRupiah(rp),
                       warnaNilai: AppColors.primary),
@@ -840,33 +863,35 @@ class _PemakaianListState extends State<_PemakaianList>
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _Ringkas(
-                  label: 'Total Pengeluaran',
-                  value: _loading ? '—' : formatRupiah(_totalRp),
-                  note: _loading ? '' : '$_total transaksi',
-                  icon: Icons.attach_money,
-                  warna: AppColors.primary,
-                  latar: _bgBiru,
+          if (widget.showSummary) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _Ringkas(
+                    label: 'Total Pengeluaran',
+                    value: _loading ? '—' : formatRupiah(_totalRp),
+                    note: _loading ? '' : '$_total transaksi',
+                    icon: Icons.payments_outlined,
+                    warna: AppColors.primary,
+                    latar: _bgBiru,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _Ringkas(
-                  label: 'Total Liter',
-                  value: _loading ? '—' : '${formatLiter(_totalLiter)} L',
-                  note: _mine ? 'milik Anda' : 'hanya dilihat',
-                  icon: Icons.local_gas_station,
-                  warna: AppColors.success,
-                  teks: _fgHijau,
-                  latar: _bgHijau,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _Ringkas(
+                    label: 'Total Liter',
+                    value: _loading ? '—' : '${formatLiter(_totalLiter)} L',
+                    note: _mine ? 'milik Anda' : 'hanya dilihat',
+                    icon: Icons.local_gas_station,
+                    warna: AppColors.success,
+                    teks: _fgHijau,
+                    latar: _bgHijau,
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ],
       ),
     );
