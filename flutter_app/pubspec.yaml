@@ -85,7 +85,8 @@ flutter_launcher_icons:
 # The following section is specific to Flutter packages.
 flutter:
   assets:
-      - assets/images/logo.png
+      - assets/images/logo-pln2.png
+      - assets/images/logo-pln1.png
       - assets/images/login1.jpg
       - assets/images/login2.jpg
       - assets/images/login3.jpg
