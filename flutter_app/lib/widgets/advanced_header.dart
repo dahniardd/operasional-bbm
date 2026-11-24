@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import '../config/design_tokens.dart';
 import '../models/user.dart';
 
-/// Header utama dashboard: identitas aplikasi dan info driver dalam satu
+/// Header utama dashboard: logo aplikasi dan info driver dalam satu
 /// komponen biru. Avatar driver dapat diketuk untuk membuka profil.
 class AdvancedHeader extends StatelessWidget {
   final User? user;
@@ -14,6 +14,9 @@ class AdvancedHeader extends StatelessWidget {
   final VoidCallback? onProfileTap;
 
   const AdvancedHeader({super.key, this.user, this.onProfileTap});
+
+  // Tinggi logo PLN (lebar otomatis mengikuti rasio asli gambar).
+  static const double _logoHeight = 32;
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -29,6 +32,34 @@ class AdvancedHeader extends StatelessWidget {
     if (hour < 15) return Icons.wb_sunny;
     if (hour < 18) return Icons.wb_twilight;
     return Icons.nights_stay_outlined;
+  }
+
+  // Logo PLN dengan kotak kaca tipis, tanpa border dan tanpa teks.
+  Widget _buildLogoBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withValues(alpha: 0.16),
+            Colors.white.withValues(alpha: 0.05),
+          ],
+        ),
+      ),
+      child: Image.asset(
+        'assets/images/logo-pln1.png',
+        height: _logoHeight,
+        fit: BoxFit.fitHeight,
+        errorBuilder: (_, _, _) => const Icon(
+          Icons.bolt_rounded,
+          color: AppTokens.onBrand,
+          size: _logoHeight,
+        ),
+      ),
+    );
   }
 
   @override
@@ -91,55 +122,9 @@ class AdvancedHeader extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          padding: const EdgeInsets.all(AppTokens.space4),
-                          decoration: BoxDecoration(
-                            color: AppTokens.onBrandAccent,
-                            borderRadius: BorderRadius.circular(
-                              AppTokens.radiusMd,
-                            ),
-                            border: Border.all(color: AppTokens.onBrandBorder),
-                          ),
-                          child: Image.asset(
-                            'assets/images/logo.png',
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, _, _) => const Icon(
-                              Icons.bolt_rounded,
-                              color: AppTokens.onBrand,
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: AppTokens.space10),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'PLN NP',
-                              style: GoogleFonts.poppins(
-                                fontSize: AppTokens.fontCaption,
-                                fontWeight: FontWeight.w600,
-                                height: 1.1,
-                                color: AppTokens.onBrandMuted,
-                              ),
-                            ),
-                            Text(
-                              'e-Operasional',
-                              style: GoogleFonts.poppins(
-                                fontSize: AppTokens.fontBody,
-                                fontWeight: FontWeight.w700,
-                                height: 1.1,
-                                color: AppTokens.onBrand,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: _buildLogoBadge(),
                     ),
                     const SizedBox(height: AppTokens.space14),
                     Row(

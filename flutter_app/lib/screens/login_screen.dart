@@ -1,4 +1,4 @@
-import 'dart:ui' show PointerDeviceKind;
+import 'dart:ui' show ImageFilter, PointerDeviceKind;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -59,6 +59,10 @@ class _LoginScreenState extends State<LoginScreen>
   // Tambahan tinggi kartu supaya bisa di-scroll (dalam piksel).
   // 0 = kartu pas setinggi sisa layar.
   static const double _extraScroll = 0;
+
+  // Ukuran logo & kelengkungan kotak kaca di belakangnya.
+  static const double _brandLogoHeight = 32;
+  static const double _brandGlassRadius = 14;
 
   @override
   void initState() {
@@ -154,43 +158,38 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  // Logo + nama aplikasi (langsung di atas foto, tanpa kaca)
+  // Logo PLN dengan highlight kaca bening (glassmorphism), tanpa teks
   Widget _buildBrandBadge() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(6),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(_brandGlassRadius),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(_brandGlassRadius),
+            // Kaca tipis tanpa border: pinggirnya menyatu dengan foto
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withValues(alpha: 0.14),
+                Colors.white.withValues(alpha: 0.04),
+              ],
+            ),
+          ),
           child: Image.asset(
-            'assets/images/logo.png',
-            height: 26,
-            width: 26,
-            fit: BoxFit.contain,
+            'assets/images/logo-pln1.png',
+            height: _brandLogoHeight,
+            fit: BoxFit.fitHeight,
             errorBuilder: (_, __, ___) => const Icon(
               Icons.local_gas_station_rounded,
               color: Colors.white,
-              size: 22,
+              size: _brandLogoHeight,
             ),
           ),
         ),
-        const SizedBox(width: 10),
-        Text(
-          AppStrings.appName,
-          style: GoogleFonts.poppins(
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.2,
-            color: Colors.white,
-            shadows: [
-              Shadow(
-                color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 6,
-                offset: const Offset(0, 1),
-              ),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 

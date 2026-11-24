@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../config/app_strings.dart';
 import '../config/app_theme.dart';
 
 /// Kerangka header biru bersama: gradien, lingkaran dekorasi, SafeArea,
-/// identitas aplikasi, dan (opsional) tombol kembali / profil.
+/// logo aplikasi, dan (opsional) tombol kembali / profil.
 /// Isi spesifik halaman diberikan lewat [child] (mis. [PlnHeaderTitle]).
 ///
 /// Letakkan di lib/widgets/pln_header_shell.dart.
 class PlnHeaderShell extends StatelessWidget {
-  /// Isi di bawah baris identitas aplikasi.
+  /// Isi di bawah baris logo aplikasi.
   final Widget child;
 
   /// Kalau diisi, tombol profil tampil di kanan atas.
@@ -25,6 +24,9 @@ class PlnHeaderShell extends StatelessWidget {
     this.onProfileTap,
     this.onBack,
   });
+
+  // Tinggi logo PLN (lebar otomatis mengikuti rasio asli gambar).
+  static const double _logoHeight = 30;
 
   Widget _tombol(IconData icon, VoidCallback onTap, String tooltip) {
     return Tooltip(
@@ -50,6 +52,34 @@ class PlnHeaderShell extends StatelessWidget {
               size: 18,
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  // Logo PLN dengan kotak kaca tipis, tanpa border dan tanpa teks.
+  Widget _logoBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withValues(alpha: 0.16),
+            Colors.white.withValues(alpha: 0.05),
+          ],
+        ),
+      ),
+      child: Image.asset(
+        'assets/images/logo-pln1.png',
+        height: _logoHeight,
+        fit: BoxFit.fitHeight,
+        errorBuilder: (_, __, ___) => const Icon(
+          Icons.bolt_rounded,
+          color: Colors.white,
+          size: _logoHeight,
         ),
       ),
     );
@@ -109,59 +139,14 @@ class PlnHeaderShell extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
               child: Column(
                 children: [
-                  // Identitas aplikasi + tombol
+                  // Logo aplikasi + tombol
                   Row(
                     children: [
                       if (onBack != null) ...[
                         _tombol(Icons.arrow_back_rounded, onBack!, 'Kembali'),
                         const SizedBox(width: 10),
                       ],
-                      Container(
-                        width: 32,
-                        height: 32,
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(9),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.18),
-                          ),
-                        ),
-                        child: Image.asset(
-                          'assets/images/logo.png',
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => const Icon(
-                            Icons.bolt_rounded,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 9),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            AppStrings.companyName,
-                            style: GoogleFonts.poppins(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              height: 1.1,
-                              color: Colors.white.withValues(alpha: 0.9),
-                            ),
-                          ),
-                          Text(
-                            AppStrings.appName,
-                            style: GoogleFonts.poppins(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              height: 1.1,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
+                      _logoBadge(),
                       const Spacer(),
                       if (onProfileTap != null)
                         _tombol(
