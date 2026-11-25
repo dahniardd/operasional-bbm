@@ -197,7 +197,7 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget> {
     final textScale = MediaQuery.textScalerOf(
       context,
     ).scale(1).clamp(1.0, 1.6).toDouble();
-    final bars = _items.where((item) => _valueOf(item) > 0).toList();
+    final bars = _items;
 
     return Container(
       decoration: BoxDecoration(
@@ -605,16 +605,19 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget> {
                   ),
                   const SizedBox(height: AppTokens.space4),
                   Container(
-                    height: (barArea * ratio)
-                        .clamp(value > 0 ? 3.0 : 0.0, barArea)
-                        .toDouble(),
+                    height: value > 0
+                        ? (barArea * ratio).clamp(3.0, barArea).toDouble()
+                        : 3,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                        colors: [color, color.withValues(alpha: 0.55)],
-                      ),
+                      gradient: value > 0
+                          ? LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                              colors: [color, color.withValues(alpha: 0.55)],
+                            )
+                          : null,
+                      color: value > 0 ? null : AppTokens.border,
                       borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(AppTokens.space6),
                       ),
