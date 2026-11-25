@@ -38,6 +38,8 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
   final ImagePicker _imagePicker = ImagePicker();
   Uint8List? _fotoBytes;
   String? _fotoName;
+  HasilKetajaman? _fotoKetajaman;
+  ImageSource? _fotoSource;
   bool _pickingFoto = false;
 
   @override
@@ -264,18 +266,20 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
         return;
       }
 
-      // Foto buram ditolak: tidak disimpan ke _fotoBytes, jadi tidak mungkin
-      // ikut terkirim. Kalau gambar tidak bisa dinilai (null), tetap diterima.
-      if (await BlurDetector.apakahBuram(bytes) == true) {
+      final hasilKetajaman = await BlurDetector.analisisKetajaman(bytes);
+
+      if (!mounted) {
+        return;
+      }
+
+      if (hasilKetajaman.buram) {
         buram = true;
       } else {
-        if (!mounted) {
-          return;
-        }
-
         setState(() {
           _fotoBytes = bytes;
           _fotoName = picked.name.isEmpty ? 'bukti_bbm.jpg' : picked.name;
+          _fotoKetajaman = hasilKetajaman;
+          _fotoSource = source;
         });
       }
     } catch (_) {
@@ -351,6 +355,8 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
     setState(() {
       _fotoBytes = null;
       _fotoName = null;
+      _fotoKetajaman = null;
+      _fotoSource = null;
     });
   }
 
@@ -359,6 +365,17 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
 
     if (provider.isSubmitting || !_canSubmit) {
       return;
+    }
+
+    final foto = _fotoBytes;
+    if (foto != null) {
+      final hasil = _fotoKetajaman;
+      if (hasil == null || hasil.buram) {
+        if (mounted) {
+          await _dialogFotoBuram(_fotoSource ?? ImageSource.camera);
+        }
+        return;
+      }
     }
 
     final payload = {
@@ -373,7 +390,6 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
     };
 
     MultipartFile? buktiBbm;
-    final foto = _fotoBytes;
     if (foto != null) {
       buktiBbm = MultipartFile.fromBytes(
         foto,
@@ -406,7 +422,7 @@ class _InputBbmScreenState extends State<InputBbmScreen> {
       barrierLabel: 'Berhasil',
       barrierColor: Colors.black.withValues(alpha: 0.5),
       transitionDuration: const Duration(milliseconds: 240),
-      pageBuilder: (dialogContext, _, __) => Center(
+      pageBuilder: (dialogContext, _, _) => Center(
         child: Material(
           color: Colors.transparent,
           child: Container(
