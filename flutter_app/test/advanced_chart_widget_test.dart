@@ -93,6 +93,49 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('menampilkan semua jenis BBM walau nilainya 0', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: AdvancedChartWidget(
+              loader: (_, _) async => [
+                _usage('pertamax', 'Pertamax', liter: 10, jumlah: 100000),
+                _usage('pertadex', 'Pertadex', liter: 4, jumlah: 40000),
+                _usage(
+                  'dexlite',
+                  'Dexlite',
+                  liter: 0,
+                  jumlah: 0,
+                  transaksi: 0,
+                ),
+                _usage(
+                  'pertamax_turbo',
+                  'Pertamax Turbo',
+                  liter: 0,
+                  jumlah: 0,
+                  transaksi: 0,
+                ),
+                _usage('solar', 'Solar', liter: 0, jumlah: 0, transaksi: 0),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pertamax'), findsOneWidget);
+    expect(find.text('Pertadex'), findsOneWidget);
+    expect(find.text('Dexlite'), findsOneWidget);
+    expect(find.text('P. Turbo'), findsOneWidget);
+    expect(find.text('Solar'), findsOneWidget);
+    expect(find.text('0'), findsNWidgets(3));
+    expect(find.text('Belum ada data pada rentang ini'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('tanggal Dari dan Sampai tampil dan membuka kalender', (
     tester,
   ) async {

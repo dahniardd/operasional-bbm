@@ -309,17 +309,13 @@ if ($method === 'GET') {
 
         $items = [];
         foreach (JENIS_BBM as $jenis) {
-            if (!isset($byJenis[$jenis])) {
-                continue;
-            }
-
-            $row = $byJenis[$jenis];
+            $row = $byJenis[$jenis] ?? null;
             $items[] = [
                 'jenis_bbm' => $jenis,
                 'label' => $labels[$jenis] ?? ucfirst($jenis),
-                'liter' => (float) $row['total_liter'],
-                'jumlah' => (float) $row['total_jumlah'],
-                'transaksi' => (int) $row['total_transaksi'],
+                'liter' => $row ? (float) $row['total_liter'] : 0.0,
+                'jumlah' => $row ? (float) $row['total_jumlah'] : 0.0,
+                'transaksi' => $row ? (int) $row['total_transaksi'] : 0,
             ];
         }
 
