@@ -45,8 +45,8 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
   /// Hanya untuk pemuatan awal (spinner layar penuh).
   bool _isLoading = true;
 
-  /// Ringkasan dan transaksi terakhir berasal dari SERVER (semua data, semua
-  /// driver), sama seperti total di Riwayat, bukan dihitung dari 20 data.
+  /// Ringkasan (angka) berasal dari SERVER untuk semua driver. Daftar riwayat
+  /// terakhir hanya milik user yang login (scope 'mine').
   Map<String, dynamic> _stats = {};
   List<PemakaianBbm> _recent = [];
   int _chartRefresh = 0;
@@ -86,8 +86,13 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
   /// Ambil ringkasan dari server. Mengembalikan pesan error, atau null.
   Future<String?> _fetchRingkasan() async {
     try {
-      final res = await ApiService().getRingkasanPemakaian();
-      final d = Map<String, dynamic>.from(res.data['data'] as Map);
+      // Ringkasan (semua driver) dan riwayat milik user dimuat bersamaan.
+      final results = await Future.wait([
+        ApiService().getRingkasanPemakaian(),
+        ApiService().getPemakaianBbm(scope: 'mine', page: 1, perPage: 6),
+      ]);
+      final d = Map<String, dynamic>.from(results[0].data['data'] as Map);
+      final riwayatSaya = (results[1].data['data'] as List?) ?? const [];
 
       _stats = {
         'todayTotal': asDouble(d['today_total']),
@@ -99,7 +104,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
         'percentageChange': asDouble(d['percentage_change']),
         'totalVehicles': asDouble(d['total_vehicles']).toInt(),
       };
-      _recent = (d['recent'] as List)
+      _recent = riwayatSaya
           .map(
             (e) => PemakaianBbm.fromJson(Map<String, dynamic>.from(e as Map)),
           )
@@ -471,7 +476,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                     ),
                     const SizedBox(height: AppTokens.space2),
                     Text(
-                      '${recentTransactions.length} transaksi terakhir',
+                      '${recentTransactions.length} transaksi terakhir Anda',
                       style: GoogleFonts.poppins(
                         fontSize: AppTokens.fontCaption,
                         fontWeight: FontWeight.w400,
@@ -514,17 +519,23 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
           const SizedBox(height: AppTokens.space10),
           if (recentTransactions.isEmpty)
             Container(
-              padding: const EdgeInsets.all(AppTokens.space24),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTokens.space20,
+                vertical: AppTokens.space24,
+              ),
               decoration: BoxDecoration(
                 color: AppTokens.surface,
                 borderRadius: BorderRadius.circular(AppTokens.radiusLg),
                 border: Border.all(color: AppTokens.border, width: 1),
               ),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const Icon(
                     Icons.inbox_outlined,
-                    size: AppTokens.minTapTarget,
+                    size: 48,
                     color: AppTokens.border,
                   ),
                   const SizedBox(height: AppTokens.space12),
@@ -537,7 +548,7 @@ class _DashboardPageAdvancedState extends State<DashboardPageAdvanced>
                       color: AppTokens.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: AppTokens.space12),
+                  const SizedBox(height: AppTokens.space4),
                   Text(
                     'Mulai dengan catat BBM untuk melihat riwayat',
                     textAlign: TextAlign.center,

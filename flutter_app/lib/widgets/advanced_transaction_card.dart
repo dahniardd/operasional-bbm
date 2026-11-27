@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../config/design_tokens.dart';
 import '../models/pemakaian_bbm.dart';
+import '../utils/formatters.dart';
 
 /// Kartu transaksi dengan detail yang dapat dibuka tanpa controller eksplisit.
 class AdvancedTransactionCard extends StatefulWidget {
@@ -153,7 +154,7 @@ class _AdvancedTransactionCardState extends State<AdvancedTransactionCard> {
                                 ),
                                 _buildMeta(
                                   Icons.local_gas_station,
-                                  '${tx.liter.toStringAsFixed(1)}L',
+                                  '${formatLiter(tx.liter)} L',
                                   color: AppTokens.brand,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -226,7 +227,7 @@ class _AdvancedTransactionCardState extends State<AdvancedTransactionCard> {
                                     ),
                                     _buildDetailRow(
                                       'Jumlah',
-                                      '${tx.liter.toStringAsFixed(1)} Liter',
+                                      '${formatLiter(tx.liter)} Liter',
                                       Icons.format_list_numbered,
                                     ),
                                     const Divider(
