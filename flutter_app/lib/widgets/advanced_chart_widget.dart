@@ -563,7 +563,7 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget> {
     }
     if (maxValue <= 0) maxValue = 1;
 
-    final valueHeight = 18 * textScale;
+    final valueHeight = 26 * textScale;
     final labelHeight = 30 * textScale;
     final barArea = 104 * textScale;
     final chartHeight =
@@ -596,8 +596,8 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget> {
                         _compactValue(value),
                         maxLines: 1,
                         style: GoogleFonts.poppins(
-                          fontSize: AppTokens.fontCaption,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
                           color: AppTokens.textPrimary,
                         ),
                       ),
@@ -650,22 +650,25 @@ class _AdvancedChartWidgetState extends State<AdvancedChartWidget> {
     );
   }
 
+  /// Format ringkas dengan koma desimal dan spasi sebelum satuan:
+  /// 5500 -> "5,5 rb", 12300000 -> "12,3 jt", 350 -> "350".
+  /// Berlaku untuk Liter maupun Rupiah.
   String _compactValue(double value) {
     if (value <= 0) return '0';
 
-    if (_selectedMetric == 'cost') {
-      if (value >= 1000000) {
-        return '${(value / 1000000).toStringAsFixed(value >= 10000000 ? 0 : 1)}jt';
-      }
-      if (value >= 1000) {
-        return '${(value / 1000).toStringAsFixed(0)}rb';
-      }
-      return value.toStringAsFixed(0);
-    }
+    // Batas 999,5 (bukan 1000) supaya angka yang dibulatkan jadi "1000 rb"
+    // langsung naik ke satuan berikutnya ("1 jt").
+    if (value >= 999500000) return '${_angka(value / 1000000000)} M';
+    if (value >= 999500) return '${_angka(value / 1000000)} jt';
+    if (value >= 999.5) return '${_angka(value / 1000)} rb';
+    return _angka(value);
+  }
 
-    if (value >= 1000) {
-      return '${(value / 1000).toStringAsFixed(1)}rb';
-    }
-    return value.toStringAsFixed(value >= 10 ? 0 : 1);
+  /// Satu desimal (dua digit ke atas: tanpa desimal), koma sebagai pemisah,
+  /// dan ",0" dibuang: 5.5 -> "5,5", 6.0 -> "6", 123.4 -> "123".
+  String _angka(double v) {
+    final teks = v.toStringAsFixed(v >= 100 ? 0 : 1);
+    if (teks.endsWith('.0')) return teks.substring(0, teks.length - 2);
+    return teks.replaceAll('.', ',');
   }
 }
